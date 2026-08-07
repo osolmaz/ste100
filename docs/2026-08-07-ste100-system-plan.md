@@ -8,7 +8,7 @@ date: 2026-08-07
 
 This plan covers two products that share one standard and data program. The first detects ASD-STE100 violations and identifies the applicable rules and source spans. The second converts complicated English into an STE100 candidate. The system must preserve technical meaning, show its evidence, and leave document approval to a person.
 
-The system contract is defined in [`STE100_SYSTEM.md`](STE100_SYSTEM.md).
+The system contract is defined in [`STE100_SYSTEM.md`](STE100_SYSTEM.md). Adjacent methods and possible data sources are recorded in [`2026-08-07-detection-and-rewrite-inspirations.md`](2026-08-07-detection-and-rewrite-inspirations.md).
 
 ## Requirements
 

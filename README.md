@@ -11,6 +11,7 @@ The repository currently contains a searchable text copy of the standard for imp
 
 - [Detection and rewriting specification](docs/STE100_SYSTEM.md)
 - [Implementation plan](docs/2026-08-07-ste100-system-plan.md)
+- [Research inspirations](docs/2026-08-07-detection-and-rewrite-inspirations.md)
 
 ## Standard
 
