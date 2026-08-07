@@ -7,6 +7,11 @@ It will also check terminology, document structure and document-level requiremen
 The checker is under development.
 The repository currently contains a searchable text copy of the standard for implementation and testing.
 
+## Design
+
+- [Detection and rewriting specification](docs/STE100_SYSTEM.md)
+- [Implementation plan](docs/2026-08-07-ste100-system-plan.md)
+
 ## Standard
 
 The source specification is [ASD-STE100 Issue 9](https://www.asd-ste100.org/assets/files/ASD-STE100_ISSUE9.pdf), published by ASD.
