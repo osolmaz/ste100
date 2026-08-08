@@ -1,0 +1,272 @@
+[
+  {
+    "example_id": "semicolon-negative",
+    "explanation": null,
+    "label": "negative",
+    "review_state": "reviewed",
+    "rule_ids": [
+      "8.1"
+    ],
+    "source": {
+      "line_end": null,
+      "line_start": null,
+      "page": 126,
+      "row": null,
+      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
+      "source_file": "ASD-STE100_ISSUE9.txt"
+    },
+    "text": "Open the valve; then start the pump."
+  },
+  {
+    "example_id": "semicolon-positive",
+    "explanation": null,
+    "label": "positive",
+    "review_state": "reviewed",
+    "rule_ids": [
+      "8.1"
+    ],
+    "source": {
+      "line_end": null,
+      "line_start": null,
+      "page": 126,
+      "row": null,
+      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
+      "source_file": "ASD-STE100_ISSUE9.txt"
+    },
+    "text": "Open the valve. Then start the pump."
+  },
+  {
+    "example_id": "contraction-negative",
+    "explanation": null,
+    "label": "negative",
+    "review_state": "reviewed",
+    "rule_ids": [
+      "4.2"
+    ],
+    "source": {
+      "line_end": null,
+      "line_start": null,
+      "page": 75,
+      "row": null,
+      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
+      "source_file": "ASD-STE100_ISSUE9.txt"
+    },
+    "text": "Don't open the access panel."
+  },
+  {
+    "example_id": "contraction-positive",
+    "explanation": null,
+    "label": "positive",
+    "review_state": "reviewed",
+    "rule_ids": [
+      "4.2"
+    ],
+    "source": {
+      "line_end": null,
+      "line_start": null,
+      "page": 75,
+      "row": null,
+      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
+      "source_file": "ASD-STE100_ISSUE9.txt"
+    },
+    "text": "Do not open the access panel."
+  },
+  {
+    "example_id": "general-that-negative",
+    "explanation": null,
+    "label": "negative",
+    "review_state": "reviewed",
+    "rule_ids": [
+      "GR-1"
+    ],
+    "source": {
+      "line_end": null,
+      "line_start": null,
+      "page": 118,
+      "row": null,
+      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
+      "source_file": "ASD-STE100_ISSUE9.txt"
+    },
+    "text": "Make sure the valve is open."
+  },
+  {
+    "example_id": "general-that-positive",
+    "explanation": null,
+    "label": "positive",
+    "review_state": "reviewed",
+    "rule_ids": [
+      "GR-1"
+    ],
+    "source": {
+      "line_end": null,
+      "line_start": null,
+      "page": 118,
+      "row": null,
+      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
+      "source_file": "ASD-STE100_ISSUE9.txt"
+    },
+    "text": "Make sure that the valve is open."
+  },
+  {
+    "example_id": "gendered-negative",
+    "explanation": null,
+    "label": "negative",
+    "review_state": "reviewed",
+    "rule_ids": [
+      "GR-7"
+    ],
+    "source": {
+      "line_end": null,
+      "line_start": null,
+      "page": 121,
+      "row": null,
+      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
+      "source_file": "ASD-STE100_ISSUE9.txt"
+    },
+    "text": "The operator must put his tools in the box."
+  },
+  {
+    "example_id": "gendered-positive",
+    "explanation": null,
+    "label": "positive",
+    "review_state": "reviewed",
+    "rule_ids": [
+      "GR-7"
+    ],
+    "source": {
+      "line_end": null,
+      "line_start": null,
+      "page": 121,
+      "row": null,
+      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
+      "source_file": "ASD-STE100_ISSUE9.txt"
+    },
+    "text": "Operators must put their tools in the box."
+  },
+  {
+    "example_id": "latin-negative",
+    "explanation": null,
+    "label": "negative",
+    "review_state": "reviewed",
+    "rule_ids": [
+      "GR-6"
+    ],
+    "source": {
+      "line_end": null,
+      "line_start": null,
+      "page": 120,
+      "row": null,
+      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
+      "source_file": "ASD-STE100_ISSUE9.txt"
+    },
+    "text": "Use the applicable tool, e.g. a wrench."
+  },
+  {
+    "example_id": "latin-positive",
+    "explanation": null,
+    "label": "positive",
+    "review_state": "reviewed",
+    "rule_ids": [
+      "GR-6"
+    ],
+    "source": {
+      "line_end": null,
+      "line_start": null,
+      "page": 120,
+      "row": null,
+      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
+      "source_file": "ASD-STE100_ISSUE9.txt"
+    },
+    "text": "Use the applicable tool, for example, a wrench."
+  },
+  {
+    "example_id": "procedure-positive",
+    "explanation": null,
+    "label": "positive",
+    "review_state": "reviewed",
+    "rule_ids": [
+      "5.1"
+    ],
+    "source": {
+      "line_end": null,
+      "line_start": null,
+      "page": 83,
+      "row": null,
+      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
+      "source_file": "ASD-STE100_ISSUE9.txt"
+    },
+    "text": "1. Open the access panel."
+  },
+  {
+    "example_id": "note-positive",
+    "explanation": null,
+    "label": "positive",
+    "review_state": "reviewed",
+    "rule_ids": [
+      "5.5"
+    ],
+    "source": {
+      "line_end": null,
+      "line_start": null,
+      "page": 88,
+      "row": null,
+      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
+      "source_file": "ASD-STE100_ISSUE9.txt"
+    },
+    "text": "NOTE: The valve stays open during the test."
+  },
+  {
+    "example_id": "note-negative",
+    "explanation": null,
+    "label": "negative",
+    "review_state": "reviewed",
+    "rule_ids": [
+      "5.5"
+    ],
+    "source": {
+      "line_end": null,
+      "line_start": null,
+      "page": 88,
+      "row": null,
+      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
+      "source_file": "ASD-STE100_ISSUE9.txt"
+    },
+    "text": "NOTE: Open the valve before the test."
+  },
+  {
+    "example_id": "parentheses-positive",
+    "explanation": null,
+    "label": "positive",
+    "review_state": "reviewed",
+    "rule_ids": [
+      "8.5"
+    ],
+    "source": {
+      "line_end": null,
+      "line_start": null,
+      "page": 125,
+      "row": null,
+      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
+      "source_file": "ASD-STE100_ISSUE9.txt"
+    },
+    "text": "Install the bolts (items 2 and 3)."
+  },
+  {
+    "example_id": "list-positive",
+    "explanation": null,
+    "label": "positive",
+    "review_state": "reviewed",
+    "rule_ids": [
+      "8.4"
+    ],
+    "source": {
+      "line_end": null,
+      "line_start": null,
+      "page": 124,
+      "row": null,
+      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
+      "source_file": "ASD-STE100_ISSUE9.txt"
+    },
+    "text": "Use these items:\n1. A wrench.\n2. A cloth."
+  }
+]

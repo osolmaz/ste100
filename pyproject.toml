@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "ste100"
 version = "0.1.0"
-description = "Check English against ASD-STE100 and prepare controlled-language rewrites"
+description = "Offline deterministic checks for ASD-STE100 Issue 9"
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [{ name = "Onur Solmaz" }]
@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-spacy = ["spacy>=3.8,<4"]
+spacy = ["spacy==3.8.11"]
 
 [project.scripts]
 ste100 = "ste100.cli:main"
@@ -25,12 +25,14 @@ packages = ["src/ste100"]
 
 [dependency-groups]
 dev = [
+    "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
     "mypy>=1.16,<2",
     "mutmut>=3.3,<4",
     "pip-audit>=2.9,<3",
     "pytest>=9,<10",
     "pytest-cov>=6,<7",
     "ruff>=0.12,<0.17",
+    "spacy==3.8.11",
 ]
 
 [tool.ruff]
@@ -73,17 +75,17 @@ fail_under = 90
 show_missing = true
 
 [tool.mutmut]
-source_paths = ["src/ste100/protection.py"]
+source_paths = ["src/ste100/schemas.py"]
 also_copy = [
-    "src/ste100/__init__.py",
     "src/ste100/checker.py",
-    "src/ste100/contracts.py",
+    "src/ste100/curate.py",
     "src/ste100/document.py",
+    "src/ste100/extract.py",
+    "src/ste100/linguistics.py",
     "src/ste100/models.py",
-    "src/ste100/protected_values.py",
     "src/ste100/py.typed",
     "src/ste100/rule_ids.py",
     "src/ste100/standard.py",
     "src/ste100/terminology.py",
 ]
-pytest_add_cli_args_test_selection = ["tests/test_protection.py"]
+pytest_add_cli_args_test_selection = ["tests/test_schema_contract.py"]

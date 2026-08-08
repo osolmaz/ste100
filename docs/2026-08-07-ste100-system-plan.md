@@ -1,226 +1,124 @@
 ---
-title: Build STE100 detection and rewriting
+title: Build the deterministic STE100 checker
 author: Onur Solmaz <2453968+osolmaz@users.noreply.github.com>
 date: 2026-08-07
 ---
 
-# Build STE100 detection and rewriting
+# Build the deterministic STE100 checker
 
-This plan covers two products that share one standard and data program. The first detects ASD-STE100 violations and identifies the applicable rules and source spans. The second converts complicated English into an STE100 candidate. The system must preserve technical meaning, show its evidence, and leave document approval to a person.
+This plan produces a deterministic offline checker for ASD-STE100 Issue 9. It does not train, load, or release a custom detector or rewriter. It never claims official compliance.
 
-The system contract is defined in [`STE100_SYSTEM.md`](STE100_SYSTEM.md). Adjacent methods and possible data sources are recorded in [`2026-08-07-detection-and-rewrite-inspirations.md`](2026-08-07-detection-and-rewrite-inspirations.md).
+The checker reports `passed`, `failed`, `human_review`, or `not_applicable` for all 53 numbered rules and eight general recommendations. A result is conclusive only when the implemented check covers the applicable clause. Contextual requirements remain visible as human-review work.
 
-## Implementation record
+## Standard pack
 
-The corpus-independent foundation is implemented. It includes Pydantic and JSON Schema contracts, deterministic Issue 9 draft extraction, standard-pack validation, a lossless UTF-8 document parser, a 61-rule conformance catalog, deterministic checks, project terminology, protected sentinels, findings and coverage, the offline CLI, dataset leakage and provenance checks, detector and rewriter interfaces, independent model manifests, optional spaCy weak labels, and release gates.
+Bundle a practical Issue 9 pack with the package. It contains:
 
-The exact source extraction has not become a reviewed pack. The rule count reconciles, but dictionary candidates produce 876 approved and 1,318 unapproved records instead of the published 875 and 1,274 words. The audit therefore prevents runtime use.
+- `standard.json`
+- `rules.json`
+- `dictionary.json`
+- `examples.json`
+- `conformance.json`
 
-The learned detector and rewriter are contracts, not trained artifacts. Large-scale corpus conversion, teacher generation, and training remain blocked on an authorized technical corpus, a 300-to-500-unit annotation pilot, and a frozen natural-passage sealed test. The private response-style corpus has been used only for local regression testing and remains weak preference evidence.
+Target the published totals of 875 approved and 1,274 unapproved words. A difference of up to five entries in either list is acceptable without further count investigation. A larger difference can ship only when each extra row is valid and directly traceable to the exact source table, duplicate keys are absent, and the manifest records the discrepancy. Never delete a valid row only to force count agreement.
 
-Source authorization, natural rewrite judgments, contamination reporting, dictionary-meaning authority, and detector-hint ablation are now fixed in [`STE100_SYSTEM.md`](STE100_SYSTEM.md).
+Each dictionary row must have a normalized headword, status, part of speech, permitted forms or alternatives where available, source page, source digest, and review state. Split words and wrapped table cells must be repaired. Duplicate and conflicting entries are errors.
 
-## Requirements
+Store the exact requirement text and source page for all 61 requirements. Include reviewed examples for deterministic clauses. Generate all runtime files from one structured source and remove parallel handwritten copies.
 
-The completed system must:
+`ste100 analyze FILE` uses the bundled pack by default. Callers can select another validated local pack explicitly.
 
-- represent Issue 9 as reviewed structured data
-- run conclusive checks without a learned model
-- train a span-aware, multi-rule violation detector
-- train a direct English-to-STE100 rewriter
-- preserve configured terms, all numbers and units, and every identifier
-- report rule coverage and remaining human-review work
-- keep training and validation separate from the sealed test
-- reproduce every released model and evaluation from pinned artifacts
+## Coverage audit
 
-The public repository and outputs must distinguish original MIT-licensed work from ASD source material covered by [`NOTICE`](../NOTICE).
+Review every requirement and assign one scope:
 
-## Assumptions
+- `full`: the complete requirement is mechanically decidable
+- `partial`: a documented clause is mechanically decidable
+- `none`: the requirement needs human judgment
 
-The project has permission to reproduce the standard. The official PDF contains usable embedded text. OCR can help inspect layout, but OCR output will not become authoritative vocabulary or rule text.
+Each full or partial record names its checker and states exactly what it proves. Unsupported requirements use human review.
 
-The first target is English technical documentation. Other English text can be rewritten, but terms that cannot be safely simplified remain unchanged and are marked for review.
+## Deterministic checks
 
-A learned model can propose a violation or rewrite. It cannot approve a document or override a conclusive deterministic finding.
+Implement every conclusive mechanical clause found in the audit. Expected families include:
 
-## Scope
+- approved and unapproved vocabulary
+- permitted forms and configured project terminology
+- contractions and omitted-word patterns that can be recognized conclusively
+- American spelling mappings that are explicitly enumerated
+- mechanical noun and verb form restrictions
+- sentence and paragraph limits
+- procedure, warning, caution, note, and vertical-list structure
+- semicolons and mechanically invalid punctuation patterns
+- parentheses, colons, hyphens, and Issue 9 word-count rules
+- consistent configured terminology
 
-This program includes the standard pack, document parser, deterministic checker, detector dataset and model, rewrite dataset and model, benchmark, native runtime, model export, and release qualification.
+A pinned optional spaCy pipeline can support part-of-speech and morphology checks. The deterministic rule uses spaCy output as evidence and retains its own decision logic. Ambiguous analysis must abstain and request human review. The default runtime remains useful without spaCy.
 
-Browser packaging follows native qualification. An editor plugin, hosted writing service, and organization-specific terminology workflow are outside the first release.
+## Tests and examples
 
-## Repository boundaries
+Each implemented checker needs:
 
-The public `ste100` repository contains:
+- positive examples
+- negative examples
+- permitted exceptions
+- exact boundary cases
+- malformed input
+- Unicode and UTF-8 offset checks
+- protected terms, numbers, units, identifiers, URLs, and code
+- applicable examples from Issue 9
+- several realistic prose examples
 
-- standard-pack schemas and reviewed Issue 9 records
-- parser and checker, including the reporting contracts and CLI together with the library
-- benchmark schemas and public fixtures
-- model-loading and evaluation contracts
-- user and maintainer documentation
+Add sanitized or synthetic examples derived from patterns observed in the private response-style dataset. Do not copy private conversation text, session identifiers, file paths, timestamps, models, or provenance into this repository.
 
-A separate research repository will contain annotation tools, spaCy bootstrap rules, synthetic-data workers, training code, experiment plans, and evaluation code. Large data and model artifacts will use revision-pinned Hugging Face repositories. The research repository will import the standard pack from an exact `ste100` commit and will not copy rule data.
+Every spaCy-backed checker needs sanity tests over manually verified sentences. Include clear positive and negative cases, ambiguous cases that must abstain, and behavior when spaCy or its pinned language pipeline is unavailable.
 
-No new repository is created until its visibility and ownership are approved. Its artifact boundary must also be approved.
+Run the local private regression script before release. It may report aggregate counts but must not print private prose.
 
-## Work sequence
+## Remove unused scope
 
-### Standard data
+Delete custom detector and rewriter interfaces, training-dataset contracts, model manifests, model-release gates, rewrite sentinels used only for generation, and learned-system documentation. Remove optional code that has no deterministic runtime use. Do not retain compatibility aliases or placeholder model APIs.
 
-Define JSON Schemas for the manifest, rule records, dictionary entries, examples, project dictionaries, findings, dataset records, and model manifests.
+Protected-content recognition remains because deterministic findings and future caller operations must preserve exact values and offsets.
 
-Extract Issue 9 into reviewed records. Preserve the original extracted text. Record the page and section, with row provenance where applicable. Reconcile every count against the expected 53 numbered rules, 8 general rules, 875 approved words, and 1,274 unapproved words.
+## CLI and library
 
-Generate human-readable reference pages and checker tables from the structured data. Do not maintain separate handwritten copies of a rule.
-
-**Completion evidence:** schema validation, count checks, source digests, and a signed-off review ledger for every rule and dictionary row.
-
-### Document parser
-
-Implement one parser for analysis and rewriting. It must identify sentences, paragraphs, lists, procedure steps, notes, cautions, warnings, tokens, punctuation, source offsets, and protected spans.
-
-Implement the sentence-boundary behavior required by Issue 9 before adding sentence-length checks. Preserve original offsets and line endings. Reject over-limit units instead of truncating them.
-
-**Completion evidence:** fixtures for standard examples, abbreviations, measurements, lists, procedures, malformed input, and Unicode text; property tests for stable offsets and lossless reconstruction.
-
-### Deterministic checker
-
-Create a conformance matrix for every Issue 9 rule. Mark each treatment as deterministic, learned, configured, or human review.
-
-Implement high-confidence checks first. These include dictionary lookup, parts of speech where unambiguous, punctuation, contractions, sentence and paragraph limits, list structure, and project terminology. Findings must cite a rule and checker. They must also include the location and evidence together with the assigned treatment.
-
-**Completion evidence:** STE and non-STE fixtures for every implemented check, no unclaimed rule in the conformance matrix, and explicit `not_checked` or `human_review` results for uncovered requirements.
-
-### Benchmark
-
-Build shared records for detector and rewrite evaluation. Include standard examples, targeted single-rule cases, natural technical prose, obscure prose, mixed-rule passages, valid identity cases, and protected-content guards.
-
-Split by source document. Remove normalized source overlap across training, development, validation, sealed test, and public benchmark material. Set minimum worthwhile effects and safety vetoes before final comparisons.
-
-**Completion evidence:** immutable split manifests, leakage audit, rule-coverage report, human annotation guide, and frozen release metrics.
-
-### Dataset bootstrap
-
-Run source text through deterministic checks and a pinned spaCy pipeline. Use POS tags and morphology to propose spans for context-dependent rules. Dependency relations can supply more evidence. Keep these annotations as weak labels.
-
-Create controlled transformations that insert one known violation into valid text. Add mixed-rule transformations only after single-rule generators pass human review. Store the generator version and label provenance on every annotation.
-
-Do not treat an unlabeled rule as a negative label. Do not use rule-generated cases as the only validation of the same rule family.
-
-**Completion evidence:** per-rule candidate counts, transformation tests, sampled human error rates, and complete provenance.
-
-### Human gold data
-
-Write a rule-specific annotation guide. Review natural text and generated candidates with two independent reviewers. Adjudicate disagreements in development and validation data, then apply the same process to test data.
-
-Each record includes rule applicability, violation labels, exact spans, accepted rewrites, protected content, document context, provenance, reviewer state, and split role. Use per-rule quotas so common vocabulary findings do not hide rare grammar and document rules.
-
-**Completion evidence:** agreement report, adjudication ledger, per-rule support, source-document split audit, and dataset digest.
-
-### Violation detector
-
-Train a pretrained English encoder with outputs for rule applicability, sentence-level multi-label detection, and per-rule token spans. Train first on verified examples and minimal pairs, then mixed examples, natural prose, and hard negatives.
-
-Calibrate each rule independently. Compare the model with deterministic and spaCy baselines. Keep model findings separate from deterministic results in stored output.
-
-**Promotion evidence:** raw precision and recall by rule, span results, false alarms per 1,000 words, calibration, unseen-document results, and a worthwhile improvement over the simpler baseline. Rules that do not meet their gate remain human-review checks.
-
-### Human rewrite data
-
-Create accepted rewrites for standard examples, technical passages, deliberately obscure English, and procedures. Include warnings and already-valid text. Mark all protected names and values. Also mark units and identifiers. Mark URLs and code separately.
-
-A rewrite can have multiple accepted targets. Reviewers judge meaning preservation separately from STE100 rule treatment.
-
-**Completion evidence:** accepted-target audit, protected-span audit, document-level split audit, and reviewer agreement.
-
-### Teacher qualification
-
-Select a strong teacher through a bounded comparison on human data. Pin the model, prompt or fine-tuning code, decoding settings, standard revision, and project terminology behavior.
-
-The teacher must improve checker findings while preserving meaning and protected content. Its output remains synthetic data with teacher provenance, even when it passes automatic checks.
-
-**Promotion evidence:** human evaluation on held-out documents, rule-level results, and protected-content results. Report latency and estimated generation cost with them.
-
-### Synthetic rewrite pilot
-
-Generate a durable pilot of 50,000 to 250,000 source-target pairs. Publish recoverable chunks and audit them before merge. Keep rejected rows and rejection reasons.
-
-Train one compact student at several data sizes. Expand generation only if more synthetic data improves natural held-out examples by more than the registered worthwhile threshold.
-
-Any substantial paid launch requires measured throughput, low and high cost estimates, a cost ceiling, a tested pause-resume path, and explicit approval under the paid-compute policy.
-
-**Promotion evidence:** data-scaling curve, teacher-noise audit, full generation cost estimate, and a decision to stop or expand.
-
-### Rewriter students
-
-Train direct encoder-decoder candidates near 20 million, 50 million, and 100 million parameters. Use human targets, synthetic targets, identity rows, correct detector hints, predicted hints, and missing hints.
-
-Audit the tokenizer over the complete corpus before training. Byte fallback and round trips must work for all input. Stop on an over-limit field. Do not drop or truncate the row.
-
-Start with greedy decoding. Compare a more expensive decoder only through a registered paired test. Select the smallest model that clears the quality and safety gates as well as the latency and package gates.
-
-**Promotion evidence:** violations removed and introduced, human meaning judgments, omitted and added facts, protected-content results, identity stability, and document structure. Report latency, memory use, and artifact size separately.
-
-### Runtime integration
-
-Implement analysis and rewriting in the order defined by the system specification. Replace protected spans with sentinels before generation. Reject candidates with missing, duplicated, or invalid sentinels. Check every candidate again before returning it.
-
-Expose transport-independent library operations first, followed by a CLI and machine-readable output. The runtime must work offline with preinstalled, revision-pinned artifacts. It must not log source text by default.
-
-**Completion evidence:** end-to-end fixtures, bounded-resource tests, malformed-model-output tests, native model attestation, and deterministic results for pinned inputs and artifacts.
-
-### Release qualification
-
-Freeze the exact standard and checker before report-only validation. Freeze the detector and rewriter at the same boundary, together with their thresholds and decoding configuration. Open the sealed test once after all earlier gates pass.
-
-Run blind human review, rule-level detector evaluation, protected-content tests, procedure and warning tests, Unicode tests, resource-limit tests, and native-to-export agreement checks. A safety-sensitive omission or changed protected fact vetoes release.
-
-Keep observed results, release recommendations, and maintainer approval as separate states. A recommendation does not deploy a model.
-
-**Completion evidence:** immutable prediction files, raw counts, evaluation report, artifact manifests, cost record, and explicit approval state.
-
-### Packaging and maintenance
-
-Export approved native models to ONNX and verify output agreement. Add browser packaging only when the native artifacts pass. Record every model and tokenizer revision. Include the dataset revision. Record the standard and code revisions in the same manifest, along with the runtime revision.
-
-Collect production corrections only with explicit consent. Do not train directly on unreviewed user text. Review false positives, missed violations, and failed rewrites by rule before registering a new data or model program.
-
-**Completion evidence:** reproducible packages, upgrade and rollback instructions, privacy defaults, and a release checklist.
-
-## Acceptance criteria
-
-The first production release is complete when:
-
-- all Issue 9 records are reviewed and validated
-- every rule has a conformance-matrix treatment
-- deterministic checks and learned findings remain distinguishable
-- detector results meet registered per-rule and aggregate gates
-- rewrite results meet the meaning and protected-content gates as well as the compliance gates
-- no source-document leakage exists between split roles
-- native and exported artifacts agree within the registered limit
-- resource and safety suites pass
-- the release report identifies the exact approved artifacts
-- no automatic result claims official compliance
-
-## Verification commands
-
-The implementation will provide stable commands for these checks:
+The supported commands are:
 
 ```text
-validate-standard
-check-rule-coverage
-verify-splits
-run-checker-tests
-run-detector-evaluation
-run-rewriter-evaluation
-verify-model-manifest
-run-safety-suite
+ste100 analyze FILE
+ste100 explain RULE
+ste100 validate-standard PATH
+ste100 validate-project-dictionary FILE
+ste100 extract-standard SOURCE OUTPUT
 ```
 
-The command names describe the checks required by this plan. They are not implemented interfaces. The implementation can choose their final CLI spelling in one hard cutover before the first release.
+JSON output is stable and includes the standard digest, findings, per-rule coverage, byte ranges, excerpts, checker IDs, and reasons for human review. Invalid configuration returns exit code 2. Conclusive violations return exit code 1.
 
-## Stop conditions
+## Release evidence
 
-Stop and report evidence when source records cannot be reconciled with Issue 9, a rule lacks a reviewable interpretation, model data leaks across split roles, protected content cannot be preserved, a tokenizer cannot represent the corpus, or a model improvement remains inside the registered practical tie region.
+Before release:
 
-Do not expand synthetic generation, train larger students, open sealed data, or deploy a candidate to work around one of these conditions.
+- validate the bundled pack and its digests
+- test every dictionary row through lookup and normalization
+- test every deterministic standard example
+- run Ruff, formatting, strict mypy, pytest with branch coverage, pip-audit, mutation testing, Slophammer, and SimpleDoc
+- build and inspect the wheel and source distribution
+- install the wheel in a clean environment and run offline CLI smoke tests
+- run Pi Reviewer until no P0 or P1 findings remain
+- pass CI
+
+The release report records the package version, code revision, source digest, bundled-pack digest, dictionary counts, coverage counts, test counts, and known human-review boundaries.
+
+## Completion criteria
+
+The deterministic release is complete when:
+
+- the bundled dictionary is valid and practical
+- all 61 requirements have reviewed coverage scopes
+- every full and partial checker has broad tests
+- analysis works without an external pack
+- no custom learned-system surface remains
+- unsupported clauses are clearly assigned to human review
+- all quality and release checks pass
+- the package makes no official compliance claim

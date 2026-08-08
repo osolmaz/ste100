@@ -1,7 +1,7 @@
 ASD-STE100 standard text
 
-The file docs/ASD-STE100_ISSUE9.txt is derived from ASD-STE100 Simplified Technical English, Issue 9, January 2025.
+The file docs/ASD-STE100_ISSUE9.txt and the structured files under src/ste100/data/issue9 are derived from ASD-STE100 Simplified Technical English, Issue 9, January 2025.
 
-Copyright © Aerospace, Security and Defence Industries Association of Europe (ASD), 2025. All rights reserved. Reproduced with permission. The standard text is not covered by the MIT License in this repository.
+Copyright © Aerospace, Security and Defence Industries Association of Europe (ASD), 2025. All rights reserved. Reproduced with permission. The standard text and derived structured standard data are not covered by the MIT License in this repository.
 
 ASD-STE100 Simplified Technical English is a registered European Union Trade Mark owned by ASD. This project is independent and is not affiliated with, endorsed by, or sponsored by ASD.

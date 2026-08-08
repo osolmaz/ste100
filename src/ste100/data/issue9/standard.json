@@ -1,0 +1,26 @@
+{
+  "expected_counts": {
+    "approved_words": 876,
+    "general_rules": 8,
+    "numbered_rules": 53,
+    "unapproved_words": 1320
+  },
+  "file_digests": {
+    "conformance.json": "sha256:900fd488c58d07e18d34204bd87481d6853eaf631afe4408424453187f99a23f",
+    "dictionary.json": "sha256:835447436056ce9870945e75797f7438636b5e23310984f9e0995c88c02f17d4",
+    "examples.json": "sha256:28b6d7f28232ecec779922764b7b820b8434417aad54d323aa3533625304da6c",
+    "rules.json": "sha256:7471388df4b8bb08100a67544105975272b85b69ed62bbc9917e0b97d3a10e5e"
+  },
+  "format_version": "1",
+  "issue": 9,
+  "review_state": "reviewed",
+  "source": {
+    "line_end": null,
+    "line_start": null,
+    "page": 1,
+    "row": null,
+    "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
+    "source_file": "ASD-STE100_ISSUE9.txt"
+  },
+  "standard_id": "ASD-STE100"
+}

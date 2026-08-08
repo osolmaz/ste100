@@ -8,7 +8,6 @@ import json
 from pathlib import Path
 
 from ste100.checker import analyze
-from ste100.protection import protect_text
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -16,6 +15,20 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("dataset", type=Path)
     parser.add_argument("--limit", type=int)
     return parser
+
+
+def _check_response(value: str) -> int:
+    result = analyze(value)
+    encoded = value.encode("utf-8")
+    for finding in result.findings:
+        if finding.byte_range is None:
+            continue
+        excerpt = encoded[finding.byte_range.start : finding.byte_range.end].decode("utf-8")
+        if excerpt != finding.excerpt:
+            raise RuntimeError("finding offsets did not preserve source text")
+    if len(result.coverage) != 61:
+        raise RuntimeError("coverage catalog is incomplete")
+    return len(result.findings)
 
 
 def main() -> int:
@@ -39,16 +52,8 @@ def main() -> int:
             for value in values:
                 if not isinstance(value, str) or not value.strip():
                     continue
-                result = analyze(value)
-                protected = protect_text(value)
-                if protected.restore(protected.masked_text) != value:
-                    raise RuntimeError("protected-content round trip failed")
+                deterministic_findings += _check_response(value)
                 responses += 1
-                deterministic_findings += sum(
-                    finding.checker_id is not None for finding in result.findings
-                )
-                if len(result.coverage) != 61:
-                    raise RuntimeError("coverage catalog is incomplete")
     print(
         json.dumps(
             {

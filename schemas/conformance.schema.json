@@ -20,22 +20,6 @@
           "title": "Deterministic Checkers",
           "type": "array"
         },
-        "learned_role": {
-          "anyOf": [
-            {
-              "enum": [
-                "detector",
-                "rewriter"
-              ],
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Learned Role"
-        },
         "reason": {
           "minLength": 1,
           "title": "Reason",
@@ -44,7 +28,6 @@
         "release_gate": {
           "enum": [
             "blocking",
-            "report_only",
             "human_review"
           ],
           "title": "Release Gate",

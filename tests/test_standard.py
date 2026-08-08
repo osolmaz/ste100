@@ -8,16 +8,18 @@ import pytest
 from pydantic import ValidationError
 
 from conftest import make_standard_pack
-from ste100.extract import (
-    build_conformance_matrix,
-    extract_dictionary_candidates,
-    extract_rule_candidates,
-    extraction_audit,
-    write_draft_extraction,
-)
-from ste100.models import ReviewState, StandardManifest
+from ste100.checker import analyze
+from ste100.curate import write_runtime_pack
+from ste100.extract import extract_rule_candidates
+from ste100.models import FindingKind, ReviewState, StandardManifest
 from ste100.schemas import generate_schemas
-from ste100.standard import StandardValidationError, load_standard_pack, validate_standard_pack
+from ste100.standard import (
+    StandardValidationError,
+    bundled_standard_path,
+    load_bundled_standard,
+    load_standard_pack,
+    validate_standard_pack,
+)
 
 _SOURCE = Path("docs/ASD-STE100_ISSUE9.txt")
 
@@ -33,37 +35,7 @@ def test_issue9_rule_extraction_has_complete_stable_catalog() -> None:
     assert rules[0].requirement.endswith("Technical verbs.")
     assert rules[-1].rule_id == "GR-8"
     assert rules[-1].requirement == "Possessive form"
-    assert len(build_conformance_matrix(rules)) == 61
-
-
-def test_dictionary_extraction_is_explicitly_a_non_runtime_draft() -> None:
-    text = _SOURCE.read_text(encoding="utf-8")
-    rules = extract_rule_candidates(text, source_name=str(_SOURCE))
-    candidates = extract_dictionary_candidates(text, source_name=str(_SOURCE))
-    audit = extraction_audit(rules, candidates)
-
-    assert audit["counts_match"] is False
-    assert audit["runtime_eligible"] is False
-    assert audit["candidate_counts"] == {
-        "numbered_rules": 53,
-        "general_rules": 8,
-        "approved_words": 876,
-        "unapproved_words": 1318,
-    }
-    assert all(candidate.review_state is ReviewState.DRAFT for candidate in candidates)
-
-
-def test_draft_writer_emits_all_auditable_artifacts(tmp_path: Path) -> None:
-    output = tmp_path / "draft"
-    audit = write_draft_extraction(_SOURCE, output)
-    assert audit["runtime_eligible"] is False
-    assert {path.name for path in output.iterdir()} == {
-        "rules.json",
-        "dictionary-candidates.json",
-        "conformance.json",
-        "extraction-audit.json",
-    }
-    assert json.loads((output / "extraction-audit.json").read_text())["counts_match"] is False
+    assert all(rule.review_state is ReviewState.DRAFT for rule in rules)
 
 
 def test_reviewed_standard_pack_loads_and_indexes_forms(tmp_path: Path) -> None:
@@ -105,18 +77,82 @@ def test_draft_pack_requires_explicit_validation_opt_in_and_never_loads(tmp_path
         load_standard_pack(root)
 
 
-def test_issue_and_expected_counts_are_fixed_to_issue9(tmp_path: Path) -> None:
+def test_manifest_counts_must_match_artifacts_and_published_differences_warn(
+    tmp_path: Path,
+) -> None:
     root = make_standard_pack(tmp_path / "pack")
     manifest_path = root / "standard.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest["expected_counts"]["approved_words"] = 1
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     report = validate_standard_pack(root)
-    assert "invalid_expected_counts" in {issue.code for issue in report.issues}
+    codes = {issue.code for issue in report.issues}
+    assert "count_mismatch" in codes
+    assert "published_count_difference" in codes
 
     manifest["issue"] = 10
     with pytest.raises(ValidationError):
         StandardManifest.model_validate(manifest)
+
+
+def test_bundled_runtime_pack_is_reproducible(tmp_path: Path) -> None:
+    output = tmp_path / "issue9"
+    write_runtime_pack(_SOURCE, output)
+    bundled = bundled_standard_path()
+    assert {path.name for path in output.iterdir()} == {path.name for path in bundled.iterdir()}
+    for path in output.iterdir():
+        assert path.read_bytes() == (bundled / path.name).read_bytes()
+
+
+def test_bundled_runtime_pack_is_valid_and_source_traceable() -> None:
+    pack = load_bundled_standard()
+    report = validate_standard_pack(bundled_standard_path())
+    assert report.valid
+    assert len(pack.rules) == 61
+    assert len(pack.conformance) == 61
+    assert len(pack.examples) >= 15
+    assert sum(entry.status == "approved" for entry in pack.dictionary) == 876
+    assert sum(entry.status == "unapproved" for entry in pack.dictionary) == 1320
+    assert all(entry.review_state is ReviewState.REVIEWED for entry in pack.dictionary)
+    assert all(entry.source.page is not None for entry in pack.dictionary)
+    warning = next(issue for issue in report.issues if issue.code == "published_count_difference")
+    assert warning.severity == "warning"
+
+
+def test_bundled_dictionary_has_unique_ids_and_status_pos_keys() -> None:
+    dictionary = load_bundled_standard().dictionary
+    assert len({entry.entry_id for entry in dictionary}) == len(dictionary)
+    keys = {(entry.word.casefold(), entry.status, entry.parts_of_speech) for entry in dictionary}
+    assert len(keys) == len(dictionary)
+    assert all(entry.word == entry.word.casefold() for entry in dictionary)
+    assert all(entry.parts_of_speech for entry in dictionary)
+
+
+def test_bundled_deterministic_examples_match_their_labels() -> None:
+    examples = load_bundled_standard().examples
+    spacy_rules = {"5.5"}
+    for example in examples:
+        rule_id = example.rule_ids[0]
+        if rule_id in spacy_rules:
+            continue
+        failed = {
+            finding.rule_id
+            for finding in analyze(example.text).findings
+            if finding.kind is FindingKind.VIOLATION
+        }
+        if example.label == "negative":
+            assert rule_id in failed, example.example_id
+        elif example.label == "positive":
+            assert rule_id not in failed, example.example_id
+
+
+def test_every_bundled_dictionary_entry_is_indexed() -> None:
+    pack = load_bundled_standard()
+    index = pack.dictionary_by_word
+    for entry in pack.dictionary:
+        assert entry in index[entry.word.casefold()]
+        for form in entry.approved_forms:
+            assert entry in index[form.casefold()]
 
 
 def test_standard_pack_requires_canonical_issue9_rule_ids(tmp_path: Path) -> None:

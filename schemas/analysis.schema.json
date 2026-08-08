@@ -26,9 +26,7 @@
       "enum": [
         "passed",
         "failed",
-        "probable_violation",
         "human_review",
-        "not_checked",
         "not_applicable"
       ],
       "title": "CoverageStatus",
@@ -49,16 +47,9 @@
           "default": null
         },
         "checker_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Checker Id"
+          "minLength": 1,
+          "title": "Checker Id",
+          "type": "string"
         },
         "excerpt": {
           "anyOf": [
@@ -85,43 +76,18 @@
           "title": "Message",
           "type": "string"
         },
-        "model_id": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Model Id"
-        },
         "rule_id": {
           "pattern": "^(?:[1-9]\\d*\\.[1-9]\\d*|GR-[1-9]\\d*)$",
           "title": "Rule Id",
           "type": "string"
-        },
-        "score": {
-          "anyOf": [
-            {
-              "maximum": 1,
-              "minimum": 0,
-              "type": "number"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Score"
         }
       },
       "required": [
         "finding_id",
         "rule_id",
         "kind",
-        "message"
+        "message",
+        "checker_id"
       ],
       "title": "Finding",
       "type": "object"
@@ -129,9 +95,7 @@
     "FindingKind": {
       "enum": [
         "violation",
-        "probable_violation",
-        "human_review",
-        "not_checked"
+        "human_review"
       ],
       "title": "FindingKind",
       "type": "string"
@@ -182,9 +146,7 @@
     "RuleTreatment": {
       "enum": [
         "deterministic",
-        "learned",
-        "human_review",
-        "not_checked"
+        "human_review"
       ],
       "title": "RuleTreatment",
       "type": "string"
@@ -213,11 +175,18 @@
       "title": "Official Compliance Claimed",
       "type": "boolean"
     },
+    "standard_digest": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "title": "Standard Digest",
+      "type": "string"
+    },
     "standard_id": {
+      "const": "ASD-STE100",
       "title": "Standard Id",
       "type": "string"
     },
     "standard_issue": {
+      "const": 9,
       "title": "Standard Issue",
       "type": "integer"
     }
@@ -225,6 +194,7 @@
   "required": [
     "standard_id",
     "standard_issue",
+    "standard_digest",
     "findings",
     "coverage"
   ],

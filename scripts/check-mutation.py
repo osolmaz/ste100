@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail when the protected-content mutation score is below the project threshold."""
+"""Fail when portable-schema mutation coverage is below the project threshold."""
 
 from __future__ import annotations
 

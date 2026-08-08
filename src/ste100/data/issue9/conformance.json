@@ -1,0 +1,501 @@
+[
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "vocabulary"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "1.1"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "approved_part_of_speech"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "1.2"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "1.3"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "approved_form"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "1.4"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "1.5"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "unapproved_vocabulary"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "1.6"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "technical_noun_as_verb"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "1.7"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "project_terminology"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "1.8"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "1.9"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "1.10"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "terminology_consistency"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "1.11"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "1.12"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "technical_verb_as_noun"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "1.13"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "american_spelling"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "1.14"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "multiword_term_length"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "2.1"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "2.2"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "approved_verb_form"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "3.1"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "verb_form"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "3.2"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "3.3"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "complex_verb"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "3.4"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "ing_form"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "3.5"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "passive_voice"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "3.6"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "3.7"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "4.1"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "contraction"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "4.2"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "vertical_list"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "4.3"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "4.4"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "4.5"
+  },
+  {
+    "coverage_scope": "full",
+    "deterministic_checkers": [
+      "procedure_sentence_length"
+    ],
+    "reason": "The complete mechanical requirement is checked.",
+    "release_gate": "blocking",
+    "rule_id": "5.1"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "instruction_count"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "5.2"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "imperative_instruction"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "5.3"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "condition_comma"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "5.4"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "note_instruction"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "5.5"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "6.1"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "6.2"
+  },
+  {
+    "coverage_scope": "full",
+    "deterministic_checkers": [
+      "descriptive_sentence_length"
+    ],
+    "reason": "The complete mechanical requirement is checked.",
+    "release_gate": "blocking",
+    "rule_id": "6.3"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "6.4"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "6.5"
+  },
+  {
+    "coverage_scope": "full",
+    "deterministic_checkers": [
+      "paragraph_sentence_count"
+    ],
+    "reason": "The complete mechanical requirement is checked.",
+    "release_gate": "blocking",
+    "rule_id": "6.6"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "7.1"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "safety_opening"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "7.2"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "7.3"
+  },
+  {
+    "coverage_scope": "full",
+    "deterministic_checkers": [
+      "semicolon"
+    ],
+    "reason": "The complete mechanical requirement is checked.",
+    "release_gate": "blocking",
+    "rule_id": "8.1"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "8.2"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "balanced_parentheses"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "8.3"
+  },
+  {
+    "coverage_scope": "full",
+    "deterministic_checkers": [
+      "word_count"
+    ],
+    "reason": "The complete mechanical requirement is checked.",
+    "release_gate": "blocking",
+    "rule_id": "8.4"
+  },
+  {
+    "coverage_scope": "full",
+    "deterministic_checkers": [
+      "word_count"
+    ],
+    "reason": "The complete mechanical requirement is checked.",
+    "release_gate": "blocking",
+    "rule_id": "8.5"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "word_count"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "8.6"
+  },
+  {
+    "coverage_scope": "full",
+    "deterministic_checkers": [
+      "word_count"
+    ],
+    "reason": "The complete mechanical requirement is checked.",
+    "release_gate": "blocking",
+    "rule_id": "8.7"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "9.1"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "9.2"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "phrasal_verb"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "9.3"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "terminology_consistency"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "9.4"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "omitted_that"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "GR-1"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "GR-2"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "GR-3"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "GR-4"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "GR-5"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "latin_abbreviation"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "GR-6"
+  },
+  {
+    "coverage_scope": "partial",
+    "deterministic_checkers": [
+      "gendered_term"
+    ],
+    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "release_gate": "human_review",
+    "rule_id": "GR-7"
+  },
+  {
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
+    "release_gate": "human_review",
+    "rule_id": "GR-8"
+  }
+]

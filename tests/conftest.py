@@ -51,7 +51,9 @@ def make_standard_pack(root: Path, *, review_state: ReviewState = ReviewState.RE
                 else f"Reviewed requirement for {rule_id}."
             ),
             treatment=(
-                RuleTreatment.DETERMINISTIC if rule_id in {"1.1", "8.1"} else RuleTreatment.LEARNED
+                RuleTreatment.DETERMINISTIC
+                if rule_id in {"1.1", "8.1"}
+                else RuleTreatment.HUMAN_REVIEW
             ),
             review_state=review_state,
             source=_source(),
@@ -137,7 +139,7 @@ def make_standard_pack(root: Path, *, review_state: ReviewState = ReviewState.RE
             coverage_scope=(
                 "full" if rule.rule_id == "8.1" else "partial" if rule.rule_id == "1.1" else "none"
             ),
-            release_gate="blocking" if rule.rule_id == "8.1" else "report_only",
+            release_gate="blocking" if rule.rule_id == "8.1" else "human_review",
             reason="Punctuation is conclusive."
             if rule.rule_id == "8.1"
             else "Context review is required.",
