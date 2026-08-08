@@ -3,6 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+from pydantic import ValidationError
+
 from conftest import make_standard_pack
 from ste100.extract import (
     build_conformance_matrix,
@@ -11,7 +14,7 @@ from ste100.extract import (
     extraction_audit,
     write_draft_extraction,
 )
-from ste100.models import ReviewState
+from ste100.models import ReviewState, StandardManifest
 from ste100.schemas import generate_schemas
 from ste100.standard import StandardValidationError, load_standard_pack, validate_standard_pack
 
@@ -93,10 +96,26 @@ def test_digest_mismatch_prevents_loading(tmp_path: Path) -> None:
         raise AssertionError("invalid pack loaded")
 
 
-def test_draft_pack_requires_explicit_opt_in(tmp_path: Path) -> None:
+def test_draft_pack_requires_explicit_validation_opt_in_and_never_loads(tmp_path: Path) -> None:
     root = make_standard_pack(tmp_path / "pack", review_state=ReviewState.DRAFT)
     assert not validate_standard_pack(root).valid
     assert validate_standard_pack(root, allow_draft=True).valid
+    with pytest.raises(StandardValidationError, match="draft_pack"):
+        load_standard_pack(root)
+
+
+def test_issue_and_expected_counts_are_fixed_to_issue9(tmp_path: Path) -> None:
+    root = make_standard_pack(tmp_path / "pack")
+    manifest_path = root / "standard.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["expected_counts"]["approved_words"] = 1
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    report = validate_standard_pack(root)
+    assert "invalid_expected_counts" in {issue.code for issue in report.issues}
+
+    manifest["issue"] = 10
+    with pytest.raises(ValidationError):
+        StandardManifest.model_validate(manifest)
 
 
 def test_artifact_path_cannot_escape_pack(tmp_path: Path) -> None:

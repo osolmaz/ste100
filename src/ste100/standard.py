@@ -20,6 +20,12 @@ from ste100.models import (
 )
 
 _REQUIRED_FILES = frozenset({"rules.json", "dictionary.json", "examples.json", "conformance.json"})
+_ISSUE9_COUNTS = {
+    "numbered_rules": 53,
+    "general_rules": 8,
+    "approved_words": 875,
+    "unapproved_words": 1274,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -290,6 +296,12 @@ def validate_standard_pack(root: Path, *, allow_draft: bool = False) -> Validati
         return ValidationReport(tuple(issues))
     if manifest.review_state is ReviewState.DRAFT and not allow_draft:
         _add(issues, "draft_pack", "runtime loading requires a reviewed standard pack")
+    if manifest.expected_counts.model_dump() != _ISSUE9_COUNTS:
+        _add(
+            issues,
+            "invalid_expected_counts",
+            "Issue 9 expected counts must match the published standard counts",
+        )
     _check_artifact_set(manifest, issues)
     artifacts = _load_artifacts(_resolve_artifacts(root, manifest, issues), issues)
     if artifacts is not None:
@@ -300,10 +312,10 @@ def validate_standard_pack(root: Path, *, allow_draft: bool = False) -> Validati
     return ValidationReport(tuple(issues))
 
 
-def load_standard_pack(root: Path, *, allow_draft: bool = False) -> StandardPack:
-    """Load a standard pack only after all validation checks pass."""
+def load_standard_pack(root: Path) -> StandardPack:
+    """Load a reviewed standard pack only after all validation checks pass."""
 
-    report = validate_standard_pack(root, allow_draft=allow_draft)
+    report = validate_standard_pack(root, allow_draft=False)
     if not report.valid:
         raise StandardValidationError(report)
     resolved = root.resolve()

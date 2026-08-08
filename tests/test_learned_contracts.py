@@ -100,6 +100,18 @@ def test_rewriter_gate_counts_duplicate_deterministic_violations() -> None:
     assert not outcome.deterministic_gate_passed
 
 
+def test_rewriter_gate_rejects_relocated_deterministic_violation() -> None:
+    text = "Don't set UNIT_A."
+    protected = protect_text(text)
+    candidate = protected.masked_text.replace("Don't", "Do not") + " Don't stop."
+    outcome = rewrite_candidate(
+        text,
+        rewriter=StaticRewriter(model_id="rewriter-test", candidate=candidate),
+    )
+    assert outcome.status == "rejected"
+    assert outcome.candidate is None
+
+
 def test_model_releases_have_role_specific_evidence_and_independent_roles(tmp_path: Path) -> None:
     artifact = tmp_path / "model.bin"
     evaluation = tmp_path / "evaluation.json"

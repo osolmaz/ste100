@@ -28,9 +28,14 @@ class RewriteOutcome:
 
 def _deterministic_violations(
     result: AnalysisResult,
-) -> Counter[tuple[str, str | None]]:
+) -> Counter[tuple[str, str | None, int | None, int | None]]:
     return Counter(
-        (finding.rule_id, finding.excerpt)
+        (
+            finding.rule_id,
+            finding.excerpt,
+            finding.byte_range.start if finding.byte_range is not None else None,
+            finding.byte_range.end if finding.byte_range is not None else None,
+        )
         for finding in result.findings
         if finding.kind is FindingKind.VIOLATION and finding.checker_id is not None
     )
