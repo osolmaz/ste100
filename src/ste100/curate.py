@@ -135,7 +135,7 @@ def _dictionary_rows(text: str) -> tuple[_DictionaryRow, ...]:  # noqa: C901 -- 
                 while previous >= 0 and not lines[previous][:column_two].strip():
                     previous -= 1
                 if previous >= 0:
-                    word = lines[previous][:column_two].strip().rstrip(",")
+                    word = _wrapped_headword(lines[previous], column_two)
                     start = previous
             elif index:
                 previous_cell = lines[index - 1][:column_two].strip()
@@ -151,6 +151,7 @@ def _dictionary_rows(text: str) -> tuple[_DictionaryRow, ...]:  # noqa: C901 -- 
                     and previous_cell.isupper()
                     and not previous_cell.endswith(")")
                     and previous_meaning
+                    and any(character.islower() for character in previous_meaning)
                     and _POS_RE.search(previous_cell) is None
                 ):
                     word = f"{previous_cell} {word}"
@@ -178,6 +179,16 @@ def _dictionary_rows(text: str) -> tuple[_DictionaryRow, ...]:  # noqa: C901 -- 
                 )
             )
     return tuple(rows)
+
+
+def _wrapped_headword(line: str, column_two: int) -> str:
+    """Read a headword whose part-of-speech marker is on the next line."""
+
+    first_column = line[:column_two].strip().rstrip(",")
+    separated = re.split(r"\s{2,}", line.strip(), maxsplit=1)
+    if len(separated) > 1 and len(separated[0]) <= column_two:
+        return separated[0].rstrip(",")
+    return re.sub(r"\s+(?:[A-Z][a-z]{0,12}|[A-Z]{1,8})$", "", first_column).strip()
 
 
 def _is_approved_headword(word: str) -> bool:
@@ -393,22 +404,24 @@ def write_runtime_pack(source: Path, output: Path) -> StandardManifest:
     }
     for name, records in artifacts.items():
         _write_models(output / name, records)
+    actual_counts = ExpectedCounts(
+        numbered_rules=sum(not item.rule_id.startswith("GR-") for item in rules),
+        general_rules=sum(item.rule_id.startswith("GR-") for item in rules),
+        approved_words=sum(item.status == "approved" for item in dictionary),
+        unapproved_words=sum(item.status == "unapproved" for item in dictionary),
+    )
     manifest = StandardManifest(
         format_version="1",
         standard_id="ASD-STE100",
         issue=9,
         review_state=ReviewState.REVIEWED,
         source=_source(digest, 1),
-        expected_counts=ExpectedCounts(
-            numbered_rules=sum(not item.rule_id.startswith("GR-") for item in rules),
-            general_rules=sum(item.rule_id.startswith("GR-") for item in rules),
-            approved_words=sum(item.status == "approved" for item in dictionary),
-            unapproved_words=sum(item.status == "unapproved" for item in dictionary),
-        ),
+        expected_counts=actual_counts,
         published_counts=ExpectedCounts(**_PUBLISHED_COUNTS),
         count_reconciliation=(
-            "The fixed-column source table yields 876 approved and 1320 unapproved "
-            "unique status/headword/part-of-speech rows after wrapped headwords are repaired. "
+            f"The fixed-column source table yields {actual_counts.approved_words} approved "
+            f"and {actual_counts.unapproved_words} unapproved unique "
+            "status/headword/part-of-speech rows after wrapped headwords are repaired. "
             "All source-traceable rows are retained; no row is deleted to force the printed totals."
         ),
         file_digests={name: _file_digest(output / name) for name in artifacts},

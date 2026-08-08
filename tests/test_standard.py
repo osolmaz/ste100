@@ -116,8 +116,8 @@ def test_bundled_runtime_pack_is_valid_and_source_traceable() -> None:
     assert len(pack.rules) == 61
     assert len(pack.conformance) == 61
     assert len(pack.examples) >= 15
-    assert sum(entry.status == "approved" for entry in pack.dictionary) == 876
-    assert sum(entry.status == "unapproved" for entry in pack.dictionary) == 1320
+    assert sum(entry.status == "approved" for entry in pack.dictionary) == 877
+    assert sum(entry.status == "unapproved" for entry in pack.dictionary) == 1319
     assert pack.manifest.published_counts.approved_words == 875
     assert pack.manifest.published_counts.unapproved_words == 1274
     assert "All source-traceable rows are retained" in pack.manifest.count_reconciliation
@@ -135,6 +135,15 @@ def test_bundled_dictionary_has_unique_ids_and_status_pos_keys() -> None:
     assert all(entry.word == entry.word.casefold() for entry in dictionary)
     assert all(entry.parts_of_speech for entry in dictionary)
     assert all(not entry.approved_meanings for entry in dictionary if entry.status == "approved")
+
+
+def test_wrapped_dictionary_headwords_do_not_include_column_bleed() -> None:
+    dictionary = load_bundled_standard().dictionary
+    by_word = {entry.word: entry for entry in dictionary}
+    assert by_word["electronically"].status == "approved"
+    assert by_word["precautionary"].status == "unapproved"
+    assert any(entry.word == "heat" and entry.status == "approved" for entry in dictionary)
+    assert not {"electronically rela", "precautionary p", "heard heat"} & set(by_word)
 
 
 def test_bundled_approved_forms_preserve_delimiters_and_hyphens() -> None:

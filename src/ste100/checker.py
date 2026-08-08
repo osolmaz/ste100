@@ -234,6 +234,10 @@ def _overlaps(byte_range: ByteRange, ranges: tuple[ByteRange, ...]) -> bool:
     return any(byte_range.start < item.end and item.start < byte_range.end for item in ranges)
 
 
+def _is_protected(byte_range: ByteRange, ranges: tuple[ByteRange, ...]) -> bool:
+    return any(item.start <= byte_range.start and byte_range.end <= item.end for item in ranges)
+
+
 def _dictionary_phrase_findings(
     text: str,
     standard: StandardPack,
@@ -356,13 +360,17 @@ def _sentence_limit_findings(
     checker_id: str,
     label: str,
     maximum: int,
+    excluded: tuple[ByteRange, ...],
 ) -> list[Finding]:
     findings: list[Finding] = []
     for sentence in block.sentences:
-        if sentence.word_count <= maximum:
+        if _is_protected(sentence.byte_range, excluded):
+            continue
+        word_count = sum(not _overlaps(token.byte_range, excluded) for token in sentence.tokens)
+        if word_count <= maximum:
             continue
         uncertain = _GROUPED_ELEMENT_RE.search(sentence.text) is not None
-        message = f"{label} has a mechanical count of {sentence.word_count}; maximum {maximum}."
+        message = f"{label} has a mechanical count of {word_count}; maximum {maximum}."
         if uncertain:
             message += " Review possible Rule 8.6 grouped elements."
         findings.append(
@@ -378,9 +386,13 @@ def _sentence_limit_findings(
     return findings
 
 
-def _condition_comma_findings(document: Document, block: Block) -> list[Finding]:
+def _condition_comma_findings(
+    document: Document, block: Block, excluded: tuple[ByteRange, ...]
+) -> list[Finding]:
     findings: list[Finding] = []
     for sentence in block.sentences:
+        if _is_protected(sentence.byte_range, excluded):
+            continue
         if not re.match(
             r"^\s*(?:\d+(?:\.\d+)*[.)]\s*)?(?:if|when|before|after|while|unless)\b",
             sentence.text,
@@ -395,20 +407,27 @@ def _condition_comma_findings(document: Document, block: Block) -> list[Finding]
                 document.text,
                 rule_id="5.4",
                 checker_id="condition_comma",
-                kind=FindingKind.VIOLATION,
-                message="Separate the initial condition from the command with a comma.",
+                kind=FindingKind.HUMAN_REVIEW,
+                message="Review whether an initial condition and command need a separating comma.",
                 byte_range=sentence.byte_range,
             )
         )
     return findings
 
 
-def _structure_findings(document: Document) -> tuple[list[Finding], set[str]]:  # noqa: C901 -- Explicit block-kind dispatch.
+def _structure_findings(  # noqa: C901 -- Explicit block-kind dispatch.
+    document: Document, excluded: tuple[ByteRange, ...]
+) -> tuple[list[Finding], set[str]]:
     findings: list[Finding] = []
     applicable: set[str] = set(_ALWAYS_APPLICABLE if document.text.strip() else ())
-    if _VERTICAL_LIST_PRESENT_RE.search(document.text):
-        applicable.update(("4.3", "8.4"))
+    offsets = char_to_byte_offsets(document.text)
+    for match in _VERTICAL_LIST_PRESENT_RE.finditer(document.text):
+        match_range = ByteRange(start=offsets[match.start()], end=offsets[match.end()])
+        if not _is_protected(match_range, excluded):
+            applicable.update(("4.3", "8.4"))
     for block in document.blocks:
+        if _is_protected(block.byte_range, excluded):
+            continue
         if block.kind in {BlockKind.PROCEDURE, BlockKind.WARNING, BlockKind.CAUTION}:
             applicable.update(("5.1", "5.2", "5.3", "5.4", "7.1", "7.2"))
             findings.extend(
@@ -419,9 +438,10 @@ def _structure_findings(document: Document) -> tuple[list[Finding], set[str]]:  
                     checker_id="procedure_sentence_length",
                     label="Procedure sentence",
                     maximum=20,
+                    excluded=excluded,
                 )
             )
-            findings.extend(_condition_comma_findings(document, block))
+            findings.extend(_condition_comma_findings(document, block, excluded))
         if block.kind in {BlockKind.PARAGRAPH, BlockKind.NOTE}:
             applicable.add("6.3")
             findings.extend(
@@ -432,18 +452,24 @@ def _structure_findings(document: Document) -> tuple[list[Finding], set[str]]:  
                     checker_id="descriptive_sentence_length",
                     label="Descriptive sentence",
                     maximum=25,
+                    excluded=excluded,
                 )
             )
         if block.kind is BlockKind.PARAGRAPH:
             applicable.add("6.6")
-            if len(block.sentences) > 6:
+            visible_sentences = tuple(
+                sentence
+                for sentence in block.sentences
+                if not _is_protected(sentence.byte_range, excluded)
+            )
+            if len(visible_sentences) > 6:
                 findings.append(
                     _finding(
                         document.text,
                         rule_id="6.6",
                         checker_id="paragraph_sentence_count",
                         kind=FindingKind.VIOLATION,
-                        message=f"Paragraph has {len(block.sentences)} sentences; maximum 6.",
+                        message=f"Paragraph has {len(visible_sentences)} sentences; maximum 6.",
                         byte_range=block.byte_range,
                     )
                 )
@@ -451,7 +477,7 @@ def _structure_findings(document: Document) -> tuple[list[Finding], set[str]]:  
             applicable.add("5.5")
         if block.kind is BlockKind.LIST:
             applicable.update(("4.3", "8.4"))
-    if document.sentences:
+    if any(not _is_protected(sentence.byte_range, excluded) for sentence in document.sentences):
         applicable.update(("8.5", "8.6", "8.7"))
     return findings, applicable
 
@@ -525,11 +551,24 @@ def _omitted_that_findings(document: Document, sentence: LinguisticSentence) -> 
     ]
 
 
-def _linguistic_findings(
+def _visible_linguistic_tokens(
+    sentence: LinguisticSentence,
+    protected: tuple[ByteRange, ...],
+    project_ranges: tuple[ByteRange, ...],
+) -> tuple[LinguisticToken, ...]:
+    return tuple(
+        token
+        for token in sentence.tokens
+        if not _overlaps(token.byte_range, protected) or _overlaps(token.byte_range, project_ranges)
+    )
+
+
+def _linguistic_findings(  # noqa: C901 -- Independent sentence-level checks.
     document: Document,
     standard: StandardPack,
     project: ProjectDictionary | None,
     analyzer: LinguisticAnalyzer | None,
+    protected: tuple[ByteRange, ...],
 ) -> tuple[list[Finding], set[str]]:
     if analyzer is None:
         return [], set()
@@ -554,6 +593,14 @@ def _linguistic_findings(
     project_ranges = tuple(match.byte_range for match in project_matches)
     index = standard.dictionary_by_word
     for sentence in analyzer.analyze(document.text):
+        visible_tokens = _visible_linguistic_tokens(sentence, protected, project_ranges)
+        if not visible_tokens:
+            continue
+        sentence = LinguisticSentence(
+            text=sentence.text,
+            tokens=visible_tokens,
+            byte_range=sentence.byte_range,
+        )
         imperative = _is_imperative(sentence)
         sentence_block = _block_for_token(document, sentence.tokens[0]) if sentence.tokens else None
         findings.extend(_omitted_that_findings(document, sentence))
@@ -892,10 +939,14 @@ def analyze(
     findings.extend(_parenthesis_findings(text, protected_ranges))
     findings.extend(_list_findings(text, protected_ranges))
     findings.extend(_vocabulary_findings(document, standard, protected_ranges))
-    structure_findings, applicable = _structure_findings(document)
+    structure_findings, applicable = _structure_findings(document, protected_ranges)
     findings.extend(structure_findings)
     linguistic_findings, linguistic_applicable = _linguistic_findings(
-        document, standard, project_dictionary, linguistic_analyzer
+        document,
+        standard,
+        project_dictionary,
+        linguistic_analyzer,
+        protected_ranges,
     )
     findings.extend(linguistic_findings)
     applicable.update(linguistic_applicable)

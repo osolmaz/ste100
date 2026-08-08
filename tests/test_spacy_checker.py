@@ -126,6 +126,17 @@ def test_omitted_that_requires_a_finite_subordinate_clause(
     assert _rule_findings("Show how to remove the cover.", "GR-1", analyzer) == []
 
 
+def test_spacy_checks_ignore_inline_and_fenced_code(analyzer: SpacyAnalyzer) -> None:
+    text = "Use `removing` as a code value.\n```text\nremoving removed\n```"
+    result = analyze(text, linguistic_analyzer=analyzer)
+    assert not [
+        finding
+        for finding in result.findings
+        if finding.excerpt in {"removing", "removed"}
+        and finding.rule_id in {"3.1", "3.2", "3.5", "3.6"}
+    ]
+
+
 def test_spacy_rules_remain_human_review_when_analyzer_is_absent() -> None:
     result = analyze("1. Open the panel.")
     coverage = next(item for item in result.coverage if item.rule_id == "5.3")
