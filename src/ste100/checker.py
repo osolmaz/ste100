@@ -97,7 +97,25 @@ _SPACY_POS = {
     "CCONJ": "conjunction",
     "SCONJ": "conjunction",
 }
-_ALWAYS_APPLICABLE = frozenset({"1.1", "1.14", "4.2", "8.1", "8.3", "9.3", "GR-6", "GR-7"})
+_ALWAYS_APPLICABLE = frozenset({"1.1", "1.14", "4.2", "8.1", "8.3", "GR-6", "GR-7"})
+_LINGUISTIC_RULE_IDS = frozenset(
+    {
+        "1.2",
+        "1.4",
+        "1.7",
+        "1.13",
+        "3.1",
+        "3.2",
+        "3.4",
+        "3.5",
+        "3.6",
+        "5.2",
+        "5.3",
+        "5.5",
+        "7.2",
+        "GR-1",
+    }
+)
 
 
 def _finding_id(rule_id: str, checker_id: str, byte_range: ByteRange | None, message: str) -> str:
@@ -303,17 +321,6 @@ def _dictionary_phrase_findings(  # noqa: C901 -- Approved and unapproved phrase
                 )
             elif unapproved:
                 findings.extend(_unapproved_findings(text, match.group(), byte_range, unapproved))
-            if any("verb" in entry.parts_of_speech for entry in unapproved):
-                findings.append(
-                    _finding(
-                        text,
-                        rule_id="9.3",
-                        checker_id="phrasal_verb",
-                        kind=FindingKind.VIOLATION,
-                        message=f"Do not use phrasal verb {match.group()!r}.",
-                        byte_range=byte_range,
-                    )
-                )
     return findings, tuple(occupied)
 
 
@@ -626,24 +633,15 @@ def _linguistic_findings(  # noqa: C901 -- Independent sentence-level checks.
     protected: tuple[ByteRange, ...],
     code_ranges: tuple[ByteRange, ...],
 ) -> tuple[list[Finding], set[str]]:
+    applicable = (
+        set(_LINGUISTIC_RULE_IDS)
+        if any(
+            not _is_protected(sentence.byte_range, code_ranges) for sentence in document.sentences
+        )
+        else set()
+    )
     if analyzer is None:
-        return [], set()
-    applicable = {
-        "1.2",
-        "1.4",
-        "1.7",
-        "1.13",
-        "3.1",
-        "3.2",
-        "3.4",
-        "3.5",
-        "3.6",
-        "5.2",
-        "5.3",
-        "5.5",
-        "7.2",
-        "GR-1",
-    }
+        return [], applicable
     findings: list[Finding] = []
     project_matches = _project_matches(document.text, project)
     project_ranges = tuple(match.byte_range for match in project_matches)

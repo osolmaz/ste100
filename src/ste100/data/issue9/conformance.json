@@ -419,11 +419,9 @@
     "rule_id": "9.2"
   },
   {
-    "coverage_scope": "partial",
-    "deterministic_checkers": [
-      "phrasal_verb"
-    ],
-    "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
+    "coverage_scope": "none",
+    "deterministic_checkers": [],
+    "reason": "The requirement is contextual and needs human review.",
     "release_gate": "human_review",
     "rule_id": "9.3"
   },

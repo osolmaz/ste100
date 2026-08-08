@@ -185,11 +185,13 @@ def test_balanced_parentheses_do_not_fail_rule_8_3() -> None:
     assert _findings("Install the cover (item 2).", "8.3") == []
 
 
-def test_unapproved_phrasal_verb_has_two_rule_findings() -> None:
+def test_unapproved_multiword_verb_does_not_establish_a_phrasal_meaning() -> None:
     result = analyze("Carry out the test.")
     pairs = {(item.rule_id, item.excerpt) for item in result.findings}
     assert ("1.1", "Carry out") in pairs
-    assert ("9.3", "Carry out") in pairs
+    assert not [item for item in result.findings if item.rule_id == "9.3"]
+    coverage = next(item for item in result.coverage if item.rule_id == "9.3")
+    assert coverage.status is CoverageStatus.HUMAN_REVIEW
 
 
 def test_vertical_list_requires_a_colon() -> None:

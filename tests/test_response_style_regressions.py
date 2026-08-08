@@ -47,7 +47,7 @@ def test_sanitized_rule_repairs_remove_the_expected_mechanical_failure() -> None
             continue
         initial = str(record["initial_assistant_response"])
         final = str(record["final_assistant_response"])
-        review_only = {"5.4", "GR-1", "GR-6", "GR-7"}
+        review_only = {"1.1", "5.4", "GR-1", "GR-6", "GR-7"}
         observed = (
             _reported_rules(initial, with_spacy="GR-1" in expected)
             if expected <= review_only
