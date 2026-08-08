@@ -84,6 +84,14 @@ def test_unlisted_verb_form_is_reported(analyzer: SpacyAnalyzer) -> None:
     assert findings[0].excerpt == "removing"
 
 
+def test_spacy_selects_approved_use_of_mixed_status_word(
+    analyzer: SpacyAnalyzer,
+) -> None:
+    assert any(item.excerpt == "back" for item in analyze("Move back.").findings)
+    result = analyze("Move back.", linguistic_analyzer=analyzer)
+    assert not [item for item in result.findings if item.excerpt == "back"]
+
+
 def test_approved_forms_are_not_rejected(analyzer: SpacyAnalyzer) -> None:
     assert _rule_findings("The technician removed the panel.", "3.1", analyzer) == []
     assert _rule_findings("The hole is deeper.", "1.4", analyzer) == []

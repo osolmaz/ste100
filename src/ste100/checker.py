@@ -301,10 +301,30 @@ def _unapproved_findings(
     ]
 
 
+def _linguistically_approved_ranges(
+    sentences: tuple[LinguisticSentence, ...], standard: StandardPack
+) -> tuple[ByteRange, ...]:
+    index = standard.dictionary_by_word
+    approved = []
+    for sentence in sentences:
+        for token in sentence.tokens:
+            actual_pos = _SPACY_POS.get(token.pos)
+            if actual_pos is None:
+                continue
+            entries = index.get(token.text.casefold(), ())
+            if any(
+                entry.status == "approved" and actual_pos in entry.parts_of_speech
+                for entry in entries
+            ):
+                approved.append(token.byte_range)
+    return tuple(approved)
+
+
 def _vocabulary_findings(
     document: Document,
     standard: StandardPack,
     excluded: tuple[ByteRange, ...],
+    linguistically_approved: tuple[ByteRange, ...],
 ) -> list[Finding]:
     findings, phrase_ranges = _dictionary_phrase_findings(document.text, standard, excluded)
     index = standard.dictionary_by_word
@@ -319,7 +339,7 @@ def _vocabulary_findings(
             entries = index.get(token.text.casefold(), ())
             approved = tuple(entry for entry in entries if entry.status == "approved")
             unapproved = tuple(entry for entry in entries if entry.status == "unapproved")
-            if approved and unapproved:
+            if approved and unapproved and not _overlaps(token.byte_range, linguistically_approved):
                 findings.append(
                     _finding_for_rules(
                         document.text,
@@ -521,17 +541,17 @@ def _linguistic_findings(
     document: Document,
     standard: StandardPack,
     project: ProjectDictionary | None,
-    analyzer: LinguisticAnalyzer | None,
+    sentences: tuple[LinguisticSentence, ...],
     protected: tuple[ByteRange, ...],
     code_ranges: tuple[ByteRange, ...],
 ) -> list[Finding]:
-    if analyzer is None:
+    if not sentences:
         return []
     findings: list[Finding] = []
     project_matches = _project_matches(document.text, project)
     project_ranges = tuple(match.byte_range for match in project_matches)
     index = standard.dictionary_by_word
-    for sentence in analyzer.analyze(document.text):
+    for sentence in sentences:
         syntax_incomplete = any(
             _overlaps(token.byte_range, code_ranges) for token in sentence.tokens
         )
@@ -742,6 +762,8 @@ def analyze(
     document = parse_document(text)
     protected_ranges = _protected_ranges(text, project_dictionary)
     code_ranges = _pattern_ranges(text, _CODE_RE)
+    linguistic_sentences = () if linguistic_analyzer is None else linguistic_analyzer.analyze(text)
+    linguistically_approved = _linguistically_approved_ranges(linguistic_sentences, standard)
     findings: list[Finding] = []
     findings.extend(
         _regex_findings(
@@ -764,14 +786,21 @@ def analyze(
     findings.extend(_spelling_findings(text, protected_ranges))
     findings.extend(_parenthesis_findings(text, protected_ranges))
     findings.extend(_list_findings(text, code_ranges))
-    findings.extend(_vocabulary_findings(document, standard, protected_ranges))
+    findings.extend(
+        _vocabulary_findings(
+            document,
+            standard,
+            protected_ranges,
+            linguistically_approved,
+        )
+    )
     findings.extend(_structure_findings(document, code_ranges))
     findings.extend(
         _linguistic_findings(
             document,
             standard,
             project_dictionary,
-            linguistic_analyzer,
+            linguistic_sentences,
             protected_ranges,
             code_ranges,
         )
