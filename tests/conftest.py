@@ -169,6 +169,13 @@ def make_standard_pack(root: Path, *, review_state: ReviewState = ReviewState.RE
             approved_words=875,
             unapproved_words=1274,
         ),
+        published_counts=ExpectedCounts(
+            numbered_rules=53,
+            general_rules=8,
+            approved_words=875,
+            unapproved_words=1274,
+        ),
+        count_reconciliation="Fixture counts match the published baseline.",
         file_digests={name: _digest(root / name) for name in files},
     )
     (root / "standard.json").write_text(

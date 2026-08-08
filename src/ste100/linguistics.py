@@ -50,8 +50,9 @@ class SpacyAnalyzer:
             self._pipeline = spacy.load(model_name)
         except OSError as error:  # pragma: no cover - depends on optional installation
             raise RuntimeError(f"spaCy pipeline is not installed: {model_name}") from error
-        if not {"parser", "tagger", "morphologizer"} & set(self._pipeline.pipe_names):
-            raise RuntimeError("spaCy pipeline must provide POS, morphology, and dependencies")
+        components = set(self._pipeline.pipe_names)
+        if "parser" not in components or not {"tagger", "morphologizer"} & components:
+            raise RuntimeError("spaCy pipeline must provide a parser and a POS-producing component")
         version = self._pipeline.meta.get("version", "unknown")
         self._analyzer_id = f"spacy:{model_name}:{version}"
 

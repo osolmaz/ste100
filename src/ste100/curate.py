@@ -41,6 +41,12 @@ _POS_NAMES = {
     "prefix": "prefix",
 }
 _SOURCE_FILE = "ASD-STE100_ISSUE9.txt"
+_PUBLISHED_COUNTS = {
+    "numbered_rules": 53,
+    "general_rules": 8,
+    "approved_words": 875,
+    "unapproved_words": 1274,
+}
 
 # These scopes describe only what the deterministic implementation proves.
 _CHECKERS: dict[str, tuple[str, ...]] = {
@@ -398,6 +404,12 @@ def write_runtime_pack(source: Path, output: Path) -> StandardManifest:
             general_rules=sum(item.rule_id.startswith("GR-") for item in rules),
             approved_words=sum(item.status == "approved" for item in dictionary),
             unapproved_words=sum(item.status == "unapproved" for item in dictionary),
+        ),
+        published_counts=ExpectedCounts(**_PUBLISHED_COUNTS),
+        count_reconciliation=(
+            "The fixed-column source table yields 876 approved and 1320 unapproved "
+            "unique status/headword/part-of-speech rows after wrapped headwords are repaired. "
+            "All source-traceable rows are retained; no row is deleted to force the printed totals."
         ),
         file_digests={name: _file_digest(output / name) for name in artifacts},
     )

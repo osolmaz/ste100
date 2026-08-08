@@ -162,6 +162,17 @@ def test_vertical_list_requires_a_colon() -> None:
     assert _findings(good, "4.3") == []
 
 
+def test_vertical_lists_in_protected_code_are_ignored() -> None:
+    text = "```text\nUse these items.\n1. A wrench.\n```"
+    assert _findings(text, "4.3") == []
+
+
+def test_colon_led_vertical_list_is_applicable_to_word_count() -> None:
+    result = analyze("Use these items:\n1. A wrench.\n2. A cloth.")
+    coverage = next(item for item in result.coverage if item.rule_id == "8.4")
+    assert coverage.status is CoverageStatus.PASSED
+
+
 def test_initial_procedure_condition_requires_a_comma() -> None:
     bad = "1. If the light comes on stop the test."
     good = "1. If the light comes on, stop the test."

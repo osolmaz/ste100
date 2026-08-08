@@ -20,7 +20,7 @@ Bundle a practical Issue 9 pack with the package. It contains:
 - `examples.json`
 - `conformance.json`
 
-Target the published totals of 875 approved and 1,274 unapproved words. A difference of up to five entries in either list is acceptable without further count investigation. A larger difference can ship only when each extra row is valid and directly traceable to the exact source table, duplicate keys are absent, and the manifest records the discrepancy. Never delete a valid row only to force count agreement.
+Target the published totals of 875 approved and 1,274 unapproved words. A difference of up to five entries in either list is acceptable without further count investigation. A larger difference can ship only when each extra row is valid and directly traceable to the exact source table, duplicate keys are absent, and the manifest records the published baseline, extracted counts, and reconciliation. Never delete a valid row only to force count agreement.
 
 Each dictionary row must have a normalized headword, status, part of speech, permitted forms or alternatives where available, source page, source digest, and review state. Split words and wrapped table cells must be repaired. Duplicate and conflicting entries are errors.
 

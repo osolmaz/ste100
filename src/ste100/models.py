@@ -75,6 +75,8 @@ class StandardManifest(StrictModel):
     review_state: ReviewState
     source: SourceLocation
     expected_counts: ExpectedCounts
+    published_counts: ExpectedCounts
+    count_reconciliation: Annotated[str, Field(min_length=1)]
     file_digests: dict[str, Digest]
 
 

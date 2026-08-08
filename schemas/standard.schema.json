@@ -117,6 +117,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "count_reconciliation": {
+      "minLength": 1,
+      "title": "Count Reconciliation",
+      "type": "string"
+    },
     "expected_counts": {
       "$ref": "#/$defs/ExpectedCounts"
     },
@@ -138,6 +143,9 @@
       "title": "Issue",
       "type": "integer"
     },
+    "published_counts": {
+      "$ref": "#/$defs/ExpectedCounts"
+    },
     "review_state": {
       "$ref": "#/$defs/ReviewState"
     },
@@ -157,6 +165,8 @@
     "review_state",
     "source",
     "expected_counts",
+    "published_counts",
+    "count_reconciliation",
     "file_digests"
   ],
   "title": "StandardManifest",

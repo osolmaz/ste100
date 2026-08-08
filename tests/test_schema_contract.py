@@ -36,7 +36,7 @@ def test_schema_generation_has_registered_bytes(tmp_path: Path) -> None:
         digest.update(path.name.encode())
         digest.update(b"\0")
         digest.update(path.read_bytes())
-    assert digest.hexdigest() == "cc2072a9b2c46392f1a4671a9f2cde7f317f87ae23c1325f2db099eaf62c855c"
+    assert digest.hexdigest() == "ce78500d160eed9edd6de08925ae3e9881c64c140b625db9fd512b2194cdfce9"
 
 
 def test_schema_generation_is_byte_reproducible_and_repeatable(tmp_path: Path) -> None:
