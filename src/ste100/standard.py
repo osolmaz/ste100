@@ -65,9 +65,13 @@ class StandardPack:
     def dictionary_by_word(self) -> dict[str, tuple[DictionaryEntry, ...]]:
         result: dict[str, list[DictionaryEntry]] = {}
         for entry in self.dictionary:
-            result.setdefault(entry.word.casefold(), []).append(entry)
-            for form in entry.approved_forms:
-                result.setdefault(form.casefold(), []).append(entry)
+            expressions = (
+                (entry.qualifier,)
+                if entry.qualifier is not None
+                else (entry.word, *entry.approved_forms)
+            )
+            for expression in expressions:
+                result.setdefault(expression.casefold(), []).append(entry)
         return {word: tuple(entries) for word, entries in result.items()}
 
 
@@ -235,7 +239,8 @@ def _check_ids(artifacts: _Artifacts, issues: list[ValidationIssue]) -> None:
     for values, label, path in groups:
         _check_duplicates(issues, values, label=label, path=path)
     dictionary_keys = [
-        f"{entry.status}:{entry.word.casefold()}:{','.join(entry.parts_of_speech)}"
+        f"{entry.status}:{entry.word.casefold()}:{entry.qualifier or ''}:"
+        f"{','.join(entry.parts_of_speech)}"
         for entry in artifacts.dictionary
     ]
     _check_duplicates(

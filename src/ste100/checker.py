@@ -243,33 +243,50 @@ def _is_protected(byte_range: ByteRange, ranges: tuple[ByteRange, ...]) -> bool:
     return any(item.start <= byte_range.start and byte_range.end <= item.end for item in ranges)
 
 
-def _dictionary_phrase_findings(
+def _dictionary_phrase_findings(  # noqa: C901 -- Approved and unapproved phrase dispatch.
     text: str,
     standard: StandardPack,
     project_ranges: tuple[ByteRange, ...],
 ) -> tuple[list[Finding], tuple[ByteRange, ...]]:
-    phrases = sorted(
-        {
-            entry.word: entry
-            for entry in standard.dictionary
-            if entry.status == "unapproved" and " " in entry.word
-        }.items(),
-        key=lambda item: (-len(item[0]), item[0]),
-    )
+    grouped: dict[str, list[DictionaryEntry]] = {}
+    for entry in standard.dictionary:
+        expressions = (
+            (entry.qualifier,)
+            if entry.qualifier is not None
+            else (entry.word, *entry.approved_forms)
+        )
+        for expression in expressions:
+            if " " in expression:
+                grouped.setdefault(expression, []).append(entry)
+    phrases = sorted(grouped.items(), key=lambda item: (-len(item[0]), item[0]))
     if not phrases:
         return [], ()
     offsets = char_to_byte_offsets(text)
     occupied: list[ByteRange] = []
     findings: list[Finding] = []
-    for phrase, entry in phrases:
+    for phrase, entries in phrases:
         pattern = re.compile(rf"(?<![\w-]){re.escape(phrase)}(?![\w-])", re.IGNORECASE)
         for match in pattern.finditer(text):
             byte_range = ByteRange(start=offsets[match.start()], end=offsets[match.end()])
             if _overlaps(byte_range, (*project_ranges, *occupied)):
                 continue
             occupied.append(byte_range)
-            findings.extend(_unapproved_findings(text, match.group(), byte_range, (entry,)))
-            if "verb" in entry.parts_of_speech:
+            approved = tuple(entry for entry in entries if entry.status == "approved")
+            unapproved = tuple(entry for entry in entries if entry.status == "unapproved")
+            if approved and unapproved:
+                findings.append(
+                    _finding(
+                        text,
+                        rule_id="1.1",
+                        checker_id="vocabulary",
+                        kind=FindingKind.HUMAN_REVIEW,
+                        message=f"Review the part of speech and meaning of {match.group()!r}.",
+                        byte_range=byte_range,
+                    )
+                )
+            elif unapproved:
+                findings.extend(_unapproved_findings(text, match.group(), byte_range, unapproved))
+            if any("verb" in entry.parts_of_speech for entry in unapproved):
                 findings.append(
                     _finding(
                         text,

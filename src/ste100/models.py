@@ -106,6 +106,7 @@ class DictionaryMeaning(StrictModel):
 class DictionaryEntry(StrictModel):
     entry_id: Annotated[str, Field(pattern=r"^[a-z0-9][a-z0-9._-]*$")]
     word: Annotated[str, Field(min_length=1)]
+    qualifier: str | None = None
     status: Literal["approved", "unapproved"]
     parts_of_speech: tuple[Annotated[str, Field(min_length=1)], ...]
     approved_meanings: tuple[DictionaryMeaning, ...] = ()
