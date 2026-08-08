@@ -96,7 +96,6 @@ The runtime includes checks for:
 - condition commas and vertical-list colons
 - semicolons and balanced parentheses
 - Issue 9 word-count rules
-- unapproved phrasal verbs in the dictionary
 - selected general recommendations for `that`, Latin abbreviations, and inclusive wording
 
 A checker abstains when its evidence cannot prove a violation. Unapproved nouns and verbs remain in human review until configured terminology or linguistic context resolves their use because they can be technical terms. Absence of a partial-check finding never becomes a pass for the complete rule.

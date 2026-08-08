@@ -81,7 +81,6 @@ _CHECKERS: dict[str, tuple[str, ...]] = {
     "8.5": ("word_count",),
     "8.6": ("word_count",),
     "8.7": ("word_count",),
-    "9.3": ("phrasal_verb",),
     "9.4": ("terminology_consistency",),
     "GR-1": ("omitted_that",),
     "GR-6": ("latin_abbreviation",),

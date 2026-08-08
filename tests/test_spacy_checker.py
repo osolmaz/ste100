@@ -181,8 +181,9 @@ def test_spacy_checks_ignore_inline_and_fenced_code(analyzer: SpacyAnalyzer) -> 
 
 def test_spacy_rules_remain_human_review_when_analyzer_is_absent() -> None:
     result = analyze("1. Open the panel.")
-    coverage = next(item for item in result.coverage if item.rule_id == "5.3")
-    assert coverage.status is CoverageStatus.HUMAN_REVIEW
+    statuses = {item.rule_id: item.status for item in result.coverage}
+    for rule_id in ("1.2", "1.4", "3.1", "5.3", "GR-1"):
+        assert statuses[rule_id] is CoverageStatus.HUMAN_REVIEW
 
 
 def test_manually_verified_standard_note_examples(analyzer: SpacyAnalyzer) -> None:

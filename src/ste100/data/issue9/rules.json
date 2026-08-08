@@ -765,7 +765,7 @@
     "treatment": "human_review"
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
+    "notes": "The requirement needs human judgment.",
     "requirement": "When you use two words together, do not make phrasal verbs.",
     "review_state": "reviewed",
     "rule_id": "9.3",
@@ -777,7 +777,7 @@
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
     },
-    "treatment": "deterministic"
+    "treatment": "human_review"
   },
   {
     "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",

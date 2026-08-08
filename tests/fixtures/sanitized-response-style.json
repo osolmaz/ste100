@@ -72,9 +72,9 @@
   {
     "fixture_id": "sanitized-phrasal-verb",
     "synthetic": true,
-    "expected_changed_rule_ids": ["9.3"],
+    "expected_changed_rule_ids": ["1.1"],
     "initial_assistant_response": "Carry out the test.",
-    "final_assistant_response": "Do the test."
+    "final_assistant_response": "Continue."
   },
   {
     "fixture_id": "sanitized-procedure-length",
