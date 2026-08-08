@@ -18,6 +18,7 @@ from ste100.models import (
     StandardExample,
     StandardManifest,
 )
+from ste100.rule_ids import ISSUE9_RULE_ID_SET
 
 _REQUIRED_FILES = frozenset({"rules.json", "dictionary.json", "examples.json", "conformance.json"})
 _ISSUE9_COUNTS = {
@@ -231,6 +232,15 @@ def _check_ids(artifacts: _Artifacts, issues: list[ValidationIssue]) -> None:
 
 def _check_references(artifacts: _Artifacts, issues: list[ValidationIssue]) -> None:
     rule_ids = {rule.rule_id for rule in artifacts.rules}
+    if rule_ids != ISSUE9_RULE_ID_SET:
+        missing = sorted(ISSUE9_RULE_ID_SET - rule_ids)
+        extra = sorted(rule_ids - ISSUE9_RULE_ID_SET)
+        _add(
+            issues,
+            "rule_catalog",
+            f"Issue 9 rule IDs differ; missing={missing}, extra={extra}",
+            "rules.json",
+        )
     dictionary_ids = {
         rule_id
         for entry in artifacts.dictionary

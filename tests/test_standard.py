@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -116,6 +117,28 @@ def test_issue_and_expected_counts_are_fixed_to_issue9(tmp_path: Path) -> None:
     manifest["issue"] = 10
     with pytest.raises(ValidationError):
         StandardManifest.model_validate(manifest)
+
+
+def test_standard_pack_requires_canonical_issue9_rule_ids(tmp_path: Path) -> None:
+    root = make_standard_pack(tmp_path / "pack")
+    rules_path = root / "rules.json"
+    conformance_path = root / "conformance.json"
+    rules = json.loads(rules_path.read_text(encoding="utf-8"))
+    conformance = json.loads(conformance_path.read_text(encoding="utf-8"))
+    rules[-1]["rule_id"] = "GR-9"
+    conformance[-1]["rule_id"] = "GR-9"
+    rules_path.write_text(json.dumps(rules), encoding="utf-8")
+    conformance_path.write_text(json.dumps(conformance), encoding="utf-8")
+
+    manifest_path = root / "standard.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for name in ("rules.json", "conformance.json"):
+        digest = hashlib.sha256((root / name).read_bytes()).hexdigest()
+        manifest["file_digests"][name] = f"sha256:{digest}"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    report = validate_standard_pack(root)
+    assert "rule_catalog" in {issue.code for issue in report.issues}
 
 
 def test_artifact_path_cannot_escape_pack(tmp_path: Path) -> None:

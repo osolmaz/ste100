@@ -82,6 +82,7 @@ also_copy = [
     "src/ste100/models.py",
     "src/ste100/protected_values.py",
     "src/ste100/py.typed",
+    "src/ste100/rule_ids.py",
     "src/ste100/standard.py",
     "src/ste100/terminology.py",
 ]

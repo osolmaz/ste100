@@ -70,6 +70,16 @@ def test_colon_terminates_intro_before_vertical_list() -> None:
     ]
 
 
+def test_colon_terminates_intro_before_numbered_vertical_list() -> None:
+    text = "Use these items:\n1. First item.\n2. Second item."
+    document = parse_document(text)
+    assert [sentence.text for sentence in document.sentences] == [
+        "Use these items:",
+        "1. First item.",
+        "2. Second item.",
+    ]
+
+
 def test_parenthetical_prose_is_also_a_separate_sentence() -> None:
     text = "Make sure that the switch is released (the EMER legend is off)."
     document = parse_document(text)

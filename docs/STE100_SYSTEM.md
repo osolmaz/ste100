@@ -57,6 +57,7 @@ The loader rejects:
 - absolute paths, parent traversal, and symbolic-link escapes
 - digest mismatches
 - duplicate rule, dictionary, example, or conformance IDs
+- a rule catalog that differs from the canonical 61 Issue 9 IDs
 - unknown rule references
 - missing conformance records
 - count mismatches

@@ -25,6 +25,7 @@ from ste100.models import (
     RuleCoverage,
     RuleTreatment,
 )
+from ste100.rule_ids import ISSUE9_RULE_ID_SET, ISSUE9_RULE_IDS
 from ste100.standard import StandardPack
 from ste100.terminology import TermMatcher, validate_project_dictionary
 
@@ -38,15 +39,6 @@ _CONTRACTION_RE = re.compile(
 _LEXICAL_RE = re.compile(r"^[A-Za-z]+(?:'[A-Za-z]+)?$")
 _GROUPED_ELEMENT_RE = re.compile(
     r"\b(?:[A-Z][a-z]+|[A-Z]{2,})(?:\s+(?:[A-Z][a-z]+|[A-Z]{2,})){1,}\b"
-)
-_RULE_COUNTS = {1: 14, 2: 2, 3: 7, 4: 5, 5: 5, 6: 6, 7: 3, 8: 7, 9: 4}
-_ALL_RULE_IDS = tuple(
-    [
-        f"{section}.{number}"
-        for section, count in _RULE_COUNTS.items()
-        for number in range(1, count + 1)
-    ]
-    + [f"GR-{number}" for number in range(1, 9)]
 )
 _CHECKER_BY_RULE = {
     "1.1": "vocabulary",
@@ -257,7 +249,7 @@ def _learned_findings(text: str, detector: Detector | None) -> list[Finding]:
     findings: list[Finding] = []
     text_bytes = len(text.encode("utf-8"))
     for prediction in detector.detect(text):
-        if prediction.rule_id not in _ALL_RULE_IDS:
+        if prediction.rule_id not in ISSUE9_RULE_ID_SET:
             raise ValueError(f"detector returned unknown rule ID: {prediction.rule_id}")
         if prediction.score < 0 or prediction.score > 1:
             raise ValueError("detector score must be between 0 and 1")
@@ -340,11 +332,11 @@ def _coverage(
                 if rule_id in _CHECKER_BY_RULE
                 else RuleTreatment.LEARNED
             )
-            for rule_id in _ALL_RULE_IDS
+            for rule_id in ISSUE9_RULE_IDS
         }
     )
     records: list[RuleCoverage] = []
-    for rule_id in _ALL_RULE_IDS:
+    for rule_id in ISSUE9_RULE_IDS:
         rule_findings = by_rule.get(rule_id, [])
         treatment = treatments.get(rule_id, RuleTreatment.NOT_CHECKED)
         ids = tuple(item.finding_id for item in rule_findings)

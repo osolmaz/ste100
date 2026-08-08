@@ -138,6 +138,16 @@ def test_raw_protected_copy_beside_sentinel_is_rejected() -> None:
         protected.restore(candidate)
 
 
+def test_protected_identifier_cannot_gain_hyphenated_suffix() -> None:
+    protected = protect_text("Install UNIT_A now.")
+    candidate = protected.masked_text.replace(
+        protected.sentinels[0],
+        f"{protected.sentinels[0]}-2",
+    )
+    with pytest.raises(ProtectedContentError, match="changed"):
+        protected.restore(candidate)
+
+
 def test_overlapping_caller_ranges_are_rejected() -> None:
     with pytest.raises(ProtectedContentError, match="overlap"):
         protect_text(

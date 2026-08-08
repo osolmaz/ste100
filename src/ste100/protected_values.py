@@ -10,8 +10,8 @@ def _value_pattern(value: str, kind: str) -> str:
     escaped = re.escape(value)
     if kind == "url":
         return rf"(?<!\S){escaped}(?=$|\s|[.,;:!?])"
-    prefix = r"(?<!\w)" if value[0].isalnum() or value[0] == "_" else ""
-    suffix = r"(?!\w)" if value[-1].isalnum() or value[-1] == "_" else ""
+    prefix = r"(?<![\w/-])" if value[0].isalnum() or value[0] == "_" else ""
+    suffix = r"(?![\w/-])" if value[-1].isalnum() or value[-1] == "_" else ""
     return f"{prefix}{escaped}{suffix}"
 
 
