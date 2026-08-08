@@ -1,0 +1,21 @@
+{
+  "candidate_counts": {
+    "approved_words": 876,
+    "general_rules": 8,
+    "numbered_rules": 53,
+    "unapproved_words": 1318
+  },
+  "counts_match": false,
+  "expected_counts": {
+    "approved_words": 875,
+    "general_rules": 8,
+    "numbered_rules": 53,
+    "unapproved_words": 1274
+  },
+  "notes": [
+    "Candidate rows are not controlled-vocabulary authority.",
+    "Meanings, forms, alternatives, examples, and malformed wrapped rows need review."
+  ],
+  "review_state": "draft",
+  "runtime_eligible": false
+}

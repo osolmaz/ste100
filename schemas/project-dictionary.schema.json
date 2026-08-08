@@ -1,0 +1,71 @@
+{
+  "$defs": {
+    "ProjectTerm": {
+      "additionalProperties": false,
+      "properties": {
+        "approved_forms": {
+          "default": [],
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Approved Forms",
+          "type": "array"
+        },
+        "category": {
+          "enum": [
+            "technical_noun",
+            "technical_verb"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "meaning": {
+          "minLength": 1,
+          "title": "Meaning",
+          "type": "string"
+        },
+        "source": {
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        },
+        "term": {
+          "minLength": 1,
+          "title": "Term",
+          "type": "string"
+        }
+      },
+      "required": [
+        "term",
+        "category",
+        "meaning",
+        "source"
+      ],
+      "title": "ProjectTerm",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {
+      "const": "1",
+      "title": "Format Version",
+      "type": "string"
+    },
+    "terms": {
+      "items": {
+        "$ref": "#/$defs/ProjectTerm"
+      },
+      "title": "Terms",
+      "type": "array"
+    }
+  },
+  "required": [
+    "format_version",
+    "terms"
+  ],
+  "title": "ProjectDictionary",
+  "type": "object"
+}

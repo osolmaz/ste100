@@ -1,0 +1,233 @@
+{
+  "$defs": {
+    "ByteRange": {
+      "additionalProperties": false,
+      "description": "A half-open byte range into UTF-8 encoded text.",
+      "properties": {
+        "end": {
+          "exclusiveMinimum": 0,
+          "title": "End",
+          "type": "integer"
+        },
+        "start": {
+          "minimum": 0,
+          "title": "Start",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "ByteRange",
+      "type": "object"
+    },
+    "CoverageStatus": {
+      "enum": [
+        "passed",
+        "failed",
+        "probable_violation",
+        "human_review",
+        "not_checked",
+        "not_applicable"
+      ],
+      "title": "CoverageStatus",
+      "type": "string"
+    },
+    "Finding": {
+      "additionalProperties": false,
+      "properties": {
+        "byte_range": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ByteRange"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "checker_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Checker Id"
+        },
+        "excerpt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Excerpt"
+        },
+        "finding_id": {
+          "pattern": "^finding_[0-9a-f]{16}$",
+          "title": "Finding Id",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/FindingKind"
+        },
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "model_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Id"
+        },
+        "rule_id": {
+          "pattern": "^(?:[1-9]\\d*\\.[1-9]\\d*|GR-[1-9]\\d*)$",
+          "title": "Rule Id",
+          "type": "string"
+        },
+        "score": {
+          "anyOf": [
+            {
+              "maximum": 1,
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Score"
+        }
+      },
+      "required": [
+        "finding_id",
+        "rule_id",
+        "kind",
+        "message"
+      ],
+      "title": "Finding",
+      "type": "object"
+    },
+    "FindingKind": {
+      "enum": [
+        "violation",
+        "probable_violation",
+        "human_review",
+        "not_checked"
+      ],
+      "title": "FindingKind",
+      "type": "string"
+    },
+    "RuleCoverage": {
+      "additionalProperties": false,
+      "properties": {
+        "finding_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Finding Ids",
+          "type": "array"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "rule_id": {
+          "pattern": "^(?:[1-9]\\d*\\.[1-9]\\d*|GR-[1-9]\\d*)$",
+          "title": "Rule Id",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/CoverageStatus"
+        },
+        "treatment": {
+          "$ref": "#/$defs/RuleTreatment"
+        }
+      },
+      "required": [
+        "rule_id",
+        "treatment",
+        "status"
+      ],
+      "title": "RuleCoverage",
+      "type": "object"
+    },
+    "RuleTreatment": {
+      "enum": [
+        "deterministic",
+        "learned",
+        "human_review",
+        "not_checked"
+      ],
+      "title": "RuleTreatment",
+      "type": "string"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "coverage": {
+      "items": {
+        "$ref": "#/$defs/RuleCoverage"
+      },
+      "title": "Coverage",
+      "type": "array"
+    },
+    "findings": {
+      "items": {
+        "$ref": "#/$defs/Finding"
+      },
+      "title": "Findings",
+      "type": "array"
+    },
+    "official_compliance_claimed": {
+      "const": false,
+      "default": false,
+      "title": "Official Compliance Claimed",
+      "type": "boolean"
+    },
+    "standard_id": {
+      "title": "Standard Id",
+      "type": "string"
+    },
+    "standard_issue": {
+      "title": "Standard Issue",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "standard_id",
+    "standard_issue",
+    "findings",
+    "coverage"
+  ],
+  "title": "AnalysisResult",
+  "type": "object"
+}

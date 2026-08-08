@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --locked --dev
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy
+      - run: uv run pytest --cov --cov-report=term-missing
+      - run: uv run pip-audit
+      - name: Run mutmut mutation gate
+        run: |
+          uv run mutmut run
+          uv run python scripts/check-mutation.py --results-only --min-kill-rate 80
+      - run: uvx slophammer-py@0.4.0 dry .
+      - run: npx --yes simpledoc@latest check README.md docs/*.md
+      - run: uvx slophammer-py@0.4.0 check . --execute

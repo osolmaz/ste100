@@ -1,0 +1,189 @@
+{
+  "$defs": {
+    "DictionaryEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "alternatives": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Alternatives",
+          "type": "array"
+        },
+        "approved_forms": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Approved Forms",
+          "type": "array"
+        },
+        "approved_meanings": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/DictionaryMeaning"
+          },
+          "title": "Approved Meanings",
+          "type": "array"
+        },
+        "entry_id": {
+          "pattern": "^[a-z0-9][a-z0-9._-]*$",
+          "title": "Entry Id",
+          "type": "string"
+        },
+        "parts_of_speech": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Parts Of Speech",
+          "type": "array"
+        },
+        "review_state": {
+          "$ref": "#/$defs/ReviewState"
+        },
+        "source": {
+          "$ref": "#/$defs/SourceLocation"
+        },
+        "status": {
+          "enum": [
+            "approved",
+            "unapproved"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "word": {
+          "minLength": 1,
+          "title": "Word",
+          "type": "string"
+        }
+      },
+      "required": [
+        "entry_id",
+        "word",
+        "status",
+        "parts_of_speech",
+        "review_state",
+        "source"
+      ],
+      "title": "DictionaryEntry",
+      "type": "object"
+    },
+    "DictionaryMeaning": {
+      "additionalProperties": false,
+      "properties": {
+        "meaning_id": {
+          "minLength": 1,
+          "title": "Meaning Id",
+          "type": "string"
+        },
+        "rule_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^(?:[1-9]\\d*\\.[1-9]\\d*|GR-[1-9]\\d*)$",
+            "type": "string"
+          },
+          "title": "Rule Ids",
+          "type": "array"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "meaning_id",
+        "text"
+      ],
+      "title": "DictionaryMeaning",
+      "type": "object"
+    },
+    "ReviewState": {
+      "enum": [
+        "draft",
+        "reviewed"
+      ],
+      "title": "ReviewState",
+      "type": "string"
+    },
+    "SourceLocation": {
+      "additionalProperties": false,
+      "properties": {
+        "line_end": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line End"
+        },
+        "line_start": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line Start"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "row": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Row"
+        },
+        "source_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "title": "Source Digest",
+          "type": "string"
+        },
+        "source_file": {
+          "title": "Source File",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_file",
+        "source_digest"
+      ],
+      "title": "SourceLocation",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "items": {
+    "$ref": "#/$defs/DictionaryEntry"
+  },
+  "type": "array"
+}

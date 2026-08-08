@@ -1,13 +1,13 @@
 # STE100 detection and rewriting specification
 
-This specification defines a system that finds ASD-STE100 violations and rewrites complicated English as an STE100 candidate. The system combines reviewed Issue 9 data, deterministic checks, a learned violation detector, and a learned rewriter.
+This specification defines an offline system that finds ASD-STE100 Issue 9 violations and prepares rewrite candidates. It combines reviewed standard data, deterministic checks, a learned violation detector, and a separate learned rewriter.
 
-The learned models do not certify compliance. The system reports which checks ran, which findings remain, and which requirements need human review.
+The system never certifies official compliance. It reports which checks ran, which findings are conclusive, and which requirements remain unchecked or need human review.
 
-## System outline
+## Architecture
 
 ```text
-                         Reviewed Issue 9 data
+                         Reviewed Issue 9 pack
                                   |
                     deterministic STE100 checker
                                   |
@@ -18,510 +18,243 @@ The learned models do not certify compliance. The system reports which checks ra
           +------------- check candidate ---------------+
 ```
 
-The detector and rewriter are separate models. They share the standard pack, document model, project terminology, dataset records, and benchmark splits. Each model has its own training and calibration. It also has its own release and replacement cycle.
+The detector and rewriter are separate releases. They share contracts, protected-span handling, standard revisions, and benchmark split identities. They do not share selection authority. A detector release cannot promote a rewriter, and a rewriter release cannot change detector thresholds.
 
-## Repository structure
+## Repository boundary
 
-The production repository uses this structure:
+The production repository contains:
 
 ```text
-standard/
-└── issue-9/
-    ├── manifest.json
-    ├── rules.json
-    ├── dictionary.jsonl
-    ├── examples.jsonl
-    └── schemas/
-        ├── manifest.schema.json
-        ├── rule.schema.json
-        ├── dictionary-entry.schema.json
-        └── example.schema.json
-src/
-├── document/
-├── checker/
-├── detector/
-├── rewriter/
-└── reporting/
-tests/
-├── standard/
-├── document/
-├── checker/
-└── integration/
+schemas/                    Portable JSON Schemas
+standard/issue-9/drafts/    Review-required extraction artifacts
+src/ste100/                 Parser, checker, contracts, and CLI
+tests/                      Standard, unit, integration, and regression tests
 ```
 
-Training code and generated datasets belong in a separate research repository. Checkpoints, predictions, and experiment journals also stay there. Published datasets and models live in revision-pinned Hugging Face repositories. The production repository contains the contracts needed to load and evaluate them.
+Training code, generated datasets, checkpoints, predictions, and experiment journals belong in a separate research repository. Published datasets and models use revision-pinned repositories. The production runtime does not download standards, models, code, or project data.
+
+The checked-in draft extraction is not a runtime standard pack. It contains all 53 numbered rules and 8 general recommendations. Its dictionary extraction produces 876 approved and 1,318 unapproved candidates, while Issue 9 states 875 and 1,274 words. The extraction audit marks these rows as drafts and `runtime_eligible: false` until a reviewer resolves every discrepancy.
 
 ## Standard pack
 
-A standard pack is a local directory containing one reviewed representation of an ASD-STE100 issue. The runtime loads the manifest first and then loads the files named by the manifest. It does not fetch remote files while processing a document.
+A reviewed pack is a local directory with these files:
 
-### Minimal manifest
-
-```json
-{
-  "format_version": "1",
-  "standard": "ASD-STE100",
-  "issue": "9",
-  "rules": "rules.json",
-  "dictionary": "dictionary.jsonl",
-  "examples": "examples.jsonl"
-}
+```text
+standard.json
+rules.json
+dictionary.json
+examples.json
+conformance.json
 ```
 
-### Manifest fields
+`standard.json` gives the format version, standard ID, issue, review state, source identity, expected counts, and the SHA-256 digest of every other file. Artifact names are fixed. Paths must stay inside the pack after symbolic links are resolved.
 
-| Field | Required | Type | Meaning |
-| --- | --- | --- | --- |
-| `format_version` | Yes | string | Standard-pack format. The first format is `1`. |
-| `standard` | Yes | string | Must be `ASD-STE100`. |
-| `issue` | Yes | string | ASD issue represented by the pack. |
-| `rules` | Yes | relative path | Rule records. |
-| `dictionary` | Yes | relative path | Dictionary records. |
-| `examples` | Yes | relative path | Verified example records. |
-| `source` | No | object | Source PDF identity and digest. |
-| `counts` | No | object | Expected record counts checked at load time. |
+The loader rejects:
 
-Paths must remain inside the pack. Absolute paths and parent traversal are invalid. URLs and symbolic-link escapes are also invalid. Unknown fields are rejected by the schema.
+- malformed or unknown fields
+- a draft pack unless a validation-only caller opts in
+- missing or extra artifacts
+- absolute paths, parent traversal, and symbolic-link escapes
+- digest mismatches
+- duplicate rule, dictionary, example, or conformance IDs
+- unknown rule references
+- missing conformance records
+- count mismatches
+- draft records under a reviewed manifest
 
-### Source identity
+The published Issue 9 counts are 53 numbered rules, 8 general recommendations, 875 approved words, and 1,274 unapproved words.
 
-A complete Issue 9 manifest records the official source:
+The exact contracts are in [`../schemas/`](../schemas/). Pydantic models in `src/ste100/models.py` are the implementation authority. Generated JSON Schemas must reproduce byte for byte in tests.
 
-```json
-{
-  "format_version": "1",
-  "standard": "ASD-STE100",
-  "issue": "9",
-  "rules": "rules.json",
-  "dictionary": "dictionary.jsonl",
-  "examples": "examples.jsonl",
-  "source": {
-    "title": "ASD-STE100 Simplified Technical English",
-    "issue": "9",
-    "pages": 434,
-    "pdf_sha256": "d1f4ea9e7cd6e46b47aa9057209f99e78c0e9cfc4e27a5b07895b05c1a166431"
-  },
-  "counts": {
-    "numbered_rules": 53,
-    "general_rules": 8,
-    "approved_words": 875,
-    "unapproved_words": 1274
-  }
-}
-```
+## Rule and conformance records
 
-The extracted text remains unchanged as provenance. Reviewed records supply runtime data. OCR output does not.
+A rule record contains:
 
-## Rule records
+- `rule_id`
+- the reviewed requirement
+- its primary treatment: `deterministic`, `learned`, `human_review`, or `not_checked`
+- review state
+- page and source-digest provenance
+- optional implementation notes
 
-`rules.json` contains an array of rule records. A rule record describes the standard requirement and how the system treats it.
+A separate conformance record contains:
 
-```json
-{
-  "id": "3.4",
-  "title": "Do not use complex verb constructions",
-  "scope": "sentence",
-  "requirement": "Use the verb forms permitted by the rule.",
-  "treatment": "learned",
-  "checks": ["complex-verb-construction"],
-  "source": {
-    "section": "Part 1, Section 1",
-    "page": 69
-  }
-}
-```
+- deterministic checker IDs
+- learned role, when applicable
+- `full`, `partial`, or `none` automatic coverage
+- `blocking`, `report_only`, or `human_review` release authority
+- the reason for that treatment
 
-### Rule fields
-
-| Field | Required | Type | Meaning |
-| --- | --- | --- | --- |
-| `id` | Yes | string | Rule identifier used by ASD-STE100. |
-| `title` | Yes | string | Rule title. |
-| `scope` | Yes | enum | `token`, `sentence`, `paragraph`, `step`, or `document`. |
-| `requirement` | Yes | string | Reviewed operational statement of the requirement. |
-| `treatment` | Yes | enum | `deterministic`, `learned`, `configured`, or `human_review`. |
-| `checks` | Yes | string array | Checker or detector identifiers assigned to the rule. |
-| `source` | Yes | object | Issue and section, with page and optional row provenance. |
-| `exceptions` | No | array | Reviewed exceptions defined by the standard. |
-| `notes` | No | string | Implementation limits that do not change the requirement. |
-
-The rule identifier is stable. A checker identifier describes an implementation and can change without changing the rule identifier. One checker can support more than one rule, and one rule can require more than one checker.
+This separation prevents a partial checker from silently claiming the complete rule. For example, contraction detection is a conclusive part of Rule 4.2, but it does not detect every omitted word. A clean contraction result therefore remains `not_checked` for the complete rule.
 
 ## Dictionary records
 
-`dictionary.jsonl` contains one JSON object per dictionary entry. A record represents a word together with its approval status, part of speech, and meanings.
+A reviewed dictionary record contains the displayed word, approval status, parts of speech, approved meanings, approved forms, alternatives, review state, and source provenance.
 
-```json
-{
-  "id": "close-v",
-  "word": "close",
-  "part_of_speech": "verb",
-  "approval": "approved",
-  "meanings": [
-    {
-      "id": "close-v-1",
-      "definition": "Move two parts together until they touch.",
-      "alternatives": []
-    }
-  ],
-  "source": {
-    "page": 214,
-    "row": 6
-  }
-}
-```
+The deterministic checker can conclude that a reviewed unapproved entry is a violation. It can also recognize a reviewed approved form. It cannot conclude that an approved word has the correct part of speech or meaning from spelling alone. Those questions remain learned or human-review work unless a later deterministic implementation proves the context.
 
-### Dictionary fields
-
-| Field | Required | Type | Meaning |
-| --- | --- | --- | --- |
-| `id` | Yes | string | Stable entry identifier. |
-| `word` | Yes | string | Dictionary headword in its published spelling. |
-| `part_of_speech` | Yes | string | Published part of speech. |
-| `approval` | Yes | enum | `approved` or `unapproved`. |
-| `meanings` | Yes | array | Approved meanings or replacement guidance. |
-| `forms` | No | string array | Permitted inflected forms stated or derived under a reviewed rule. |
-| `source` | Yes | object | Page and row provenance. |
-
-A word is not approved in every context merely because an approved entry exists. The checker must consider the part of speech and approved meaning. When meaning cannot be determined reliably, it reports human review.
-
-## Standard examples
-
-`examples.jsonl` contains verified STE and non-STE examples from the standard.
-
-```json
-{
-  "id": "issue-9-3.4-example-1",
-  "rule_ids": ["3.4"],
-  "non_ste": "The operator should have been notified.",
-  "ste": ["Notify the operator."],
-  "source": {
-    "page": 69
-  }
-}
-```
-
-`ste` is an array because the standard can permit more than one valid rendering. Examples are fixtures and public diagnostic cases. They are not a substitute for a document-held validation or sealed test set.
-
-## Project dictionary
-
-A project dictionary supplies terminology that the general standard pack cannot know.
-
-```json
-{
-  "format_version": "1",
-  "standard_issue": "9",
-  "terms": [
-    {
-      "text": "auxiliary power unit",
-      "category": "technical_name",
-      "forms": ["auxiliary power units"],
-      "abbreviations": ["APU"],
-      "preserve": true
-    }
-  ]
-}
-```
-
-### Project term fields
-
-| Field | Required | Type | Meaning |
-| --- | --- | --- | --- |
-| `text` | Yes | string | Canonical term. |
-| `category` | Yes | enum | `technical_name` or `technical_verb`. |
-| `forms` | No | string array | Approved written forms. |
-| `abbreviations` | No | string array | Approved abbreviations. |
-| `meaning` | No | string | Meaning used for review and disambiguation. |
-| `preserve` | No | boolean | Whether rewriting must preserve the matched text exactly. Default is `true`. |
-
-Duplicate terms with conflicting categories are invalid. The runtime uses longest-match-first resolution when project terms overlap.
+OCR and layout extraction can propose rows, but they are never controlled-vocabulary authority. Exact PDF text and human row review decide the word, punctuation, form, part of speech, meaning, and alternative.
 
 ## Document model
 
-The parser converts input into one document model before checks or rewriting begin.
+The parser preserves the caller's text and creates:
 
 ```text
 Document
   Block
     Paragraph | List | Procedure | Note | Caution | Warning
-      Unit
-        Sentence
-          Token
-          ProtectedSpan
+      Sentence
+        Token
 ```
 
-Every node carries half-open UTF-8 byte offsets into the original input. A range starts at `start` and stops before `end`. The parser preserves original text and line endings for reporting and diff generation.
+All ranges are half-open byte offsets into the original UTF-8 text. The parser does not normalize Unicode or line endings. A returned range must decode at a UTF-8 character boundary and reproduce the source excerpt.
 
-A procedure is divided into steps before sentence analysis. The rewriter processes one paragraph or one procedural step at a time. It never moves text between document units without an explicit document-level operation approved by the caller.
+The deterministic word counter treats parenthesized text, quoted text, numbers with units, URLs, identifiers, and hyphenated units as single countable elements where the applicable Issue 9 rules require it. A colon terminates a sentence in a vertical list. Procedure markers are not treated as separate prose sentences.
 
-## Findings
+## Project terminology
 
-A finding reports the result of one check against one source range.
+A project dictionary contains `technical_noun` and `technical_verb` entries with canonical terms, approved forms, meanings, and provenance.
 
-```json
-{
-  "rule_id": "3.4",
-  "check_id": "complex-verb-construction",
-  "status": "probable_violation",
-  "source": "learned",
-  "locations": [
-    {
-      "start": 18,
-      "end": 41
-    }
-  ],
-  "message": "This verb construction can make the instruction difficult to understand.",
-  "confidence": 0.94
-}
-```
+Validation rejects ambiguous forms, conflicting owners, technical nouns longer than three words, and reviewed standard conflicts. Matching is case-insensitive and longest first. A matched project term is exempt from unknown-vocabulary findings and becomes a protected span during rewriting.
 
-### Finding fields
+## Protected content
 
-| Field | Required | Type | Meaning |
-| --- | --- | --- | --- |
-| `rule_id` | Yes | string | Standard rule. |
-| `check_id` | Yes | string | Checker or detector that produced the result. |
-| `status` | Yes | enum | Result status. |
-| `source` | Yes | enum | `deterministic` or `learned`. |
-| `locations` | Yes | array | Source ranges involved in the finding. |
-| `message` | Yes | string | Plain explanation. |
-| `confidence` | Learned only | number | Calibrated probability from 0 through 1. |
-| `evidence` | No | object | Tokens, parse relations, or values that support the finding. |
+Before learned rewriting, the runtime replaces these spans with ordered sentinels:
 
-Finding statuses are:
+- project terms
+- numbers and units
+- identifiers and part numbers
+- URLs
+- inline and fenced code
+- caller-supplied ranges
 
-| Status | Meaning |
-| --- | --- |
-| `violation` | The check has conclusive evidence. |
-| `probable_violation` | The learned detector found evidence above its registered threshold. |
-| `passed` | The named check ran and found no violation in its declared scope. |
-| `not_checked` | The check could not run, usually because configuration was absent. |
-| `human_review` | The standard requires a judgment the system cannot make reliably. |
+A candidate is invalid if a sentinel is missing, changed, duplicated, unknown, or reordered. The runtime restores the exact original text only after validation. Dataset targets must also contain each protected source value exactly once and in source order.
 
-A missing finding does not mean that a rule passed. The response includes a coverage record for every applicable rule.
+Protected-span success is a hard gate. It does not prove that unprotected meaning is unchanged.
+
+## Findings and coverage
+
+A finding contains a stable ID, rule ID, kind, message, optional byte range and excerpt, and either a checker ID or model ID. Learned findings also include a score.
+
+Finding kinds are:
+
+- `violation`: conclusive deterministic evidence
+- `probable_violation`: report-only learned evidence
+- `human_review`: evidence that cannot decide the rule
+- `not_checked`: an explicit unavailable check
+
+Coverage contains all 61 Issue 9 rule IDs for every analysis. Statuses are `passed`, `failed`, `probable_violation`, `human_review`, `not_checked`, and `not_applicable`.
+
+Only a fully implemented deterministic requirement can return `passed`. No finding from a learned detector is not a pass. No vocabulary finding without a reviewed standard pack is not a pass.
+
+## Deterministic checks
+
+The initial vertical slice implements:
+
+- reviewed approved and unapproved vocabulary lookup for the mechanical part of Rule 1.1
+- contraction detection for the mechanical part of Rule 4.2
+- the 20-word procedure sentence limit in Rule 5.1
+- the 25-word descriptive sentence limit in Rule 6.3
+- the six-sentence paragraph limit in Rule 6.6
+- the semicolon prohibition in Rule 8.1
+- word-count behavior used by Rules 8.4 through 8.7
+
+The conformance matrix exposes every other rule even when no checker exists.
+
+## Shared dataset contract
+
+Detector and rewriter data use one record with:
+
+- deterministic `record_id`
+- source kind, stable source ID, and source digest
+- parent record IDs for generated data
+- source text
+- rule IDs and span-aware annotations
+- protected spans
+- complete-group split membership
+- annotation state
+- observed conversation outcome, when applicable
+- optional rewrite target
+- `inferred_approval`, fixed to `false`
+
+Source kinds are `standard_example`, `technical_document`, `conversation_revision`, and `synthetic`. Annotation states are `weak`, `reviewed`, and `adjudicated`.
+
+Complete documents and conversations stay in one split. The validator also prevents a source ID, exact text, model family, or time bucket from crossing splits. Synthetic records must cite a reviewed standard example or an adjudicated `no_violation` or exception parent. Checker-clean text is not sufficient synthetic truth.
+
+Conversation outcomes are observed labels: `revision_requested`, `continued_without_revision`, `conversation_ended`, or `explicit_approval`. Silence is never converted to acceptance. Conversation revisions remain weak preference evidence until a reviewer assigns STE100 labels.
+
+## Source corpus decisions
+
+Learned-data work can use these sources only under the stated conditions:
+
+1. Reviewed Issue 9 examples can provide rule fixtures and standard-derived training records.
+2. The private response-style corpus can support a private pilot after authorization, conversion to the shared contract, protected-content checks, and human STE100 review. It cannot be redistributed publicly and is not automatically an STE100 rewrite corpus.
+3. A technical-document corpus needs a recorded license, stable source identity, and document-level split before use. No public technical corpus is selected yet.
+4. Synthetic transformations can start only from reviewed standard positives or adjudicated clean records.
+5. Open Pangram and EditLens artifacts remain excluded until a separate decision accepts their CC BY-NC-SA 4.0 obligations.
+
+Large-scale mining, teacher generation, or training remains blocked until a 300-to-500-unit pilot establishes annotation quality, natural-passage evaluation, and teacher viability.
 
 ## Detector
 
-The learned detector is a bidirectional encoder with independent outputs for rule applicability, sentence-level labels, and token spans. Multiple rules can apply to the same token.
+The detector predicts rule IDs, scores, and optional UTF-8 byte spans. It is calibrated by rule. Invalid rule IDs, scores outside zero to one, and out-of-document spans are rejected.
 
-For each rule, training annotations use these labels:
-
-| Label | Meaning |
-| --- | --- |
-| `violation` | The text violates the rule. |
-| `no_violation` | The rule applies and the text satisfies it. |
-| `not_applicable` | The rule does not apply to this unit. |
-| `insufficient_context` | The available unit does not permit a decision. |
-
-The detector publishes thresholds and calibration evidence per rule. It does not convert a low probability into proof that a rule passed.
-
-Deterministic and learned results remain separate in storage. The reporting layer can merge them for display, but it cannot replace a conclusive deterministic result with a learned result.
+The first detector release treats spans as report-only. A model manifest can record span gating, but changing it to blocking requires separate reviewed evidence. Detector evaluation reports raw support, precision, recall, false positives, false negatives, false alarms per 1,000 words, span results, calibration, and collection-level results.
 
 ## Rewriter
 
-The rewriter is a direct encoder-decoder. It receives source text, document-unit type, project terms, protected-span sentinels, and optional detector findings. It returns text only.
+The rewriter receives sentinel-masked text and optional findings. It returns one untrusted candidate. The runtime restores protected text, parses the candidate, reruns deterministic checks, and rejects candidates that introduce a new deterministic violation.
 
-```text
-<unit>procedure-step</unit>
-<terms>auxiliary power unit | APU</terms>
-<rules>1.1 3.4</rules>
-<text>The source sentence.</text>
-```
+The output status is review-required or rejected. There is no automatic approved status.
 
-Training includes inputs with correct findings, predicted findings, incomplete findings, and no findings. This prevents a detector miss from making rewriting impossible.
+Detector hints are an ablation, not a default assumption. The same frozen natural evaluation set must compare the rewriter with and without hints. Hints can become the default only when they improve human-accepted rewrites by at least 3 absolute percentage points, uncertainty does not include no improvement, and protected-content and fact-error results do not regress. Otherwise, the simpler no-hint path wins.
 
-The first decoding baseline is greedy decoding. A more expensive decoder is adopted only when a registered comparison shows a worthwhile improvement without a safety regression.
+## Natural rewrite evaluation
 
-## Protected spans
+Checker delta is diagnostic. It cannot establish meaning preservation.
 
-The preprocessing layer identifies content that rewriting must preserve. It replaces each protected span with a unique sentinel before model inference.
+The first natural rewrite release uses at least 200 held-out technical passages. Two reviewers independently judge whether each candidate preserves all facts, intent, conditions, warnings, and procedure order. Disagreements are adjudicated. Reports include raw accepted and rejected counts, absolute rates, Wilson intervals, omissions, additions, protected-content errors, and deterministic violations introduced.
 
-```text
-Disconnect <KEEP_0> from connector <KEEP_1>.
-```
+Release gates are:
 
-A candidate is invalid when a sentinel is missing, duplicated, reordered where order is significant, or changed. The runtime restores original bytes only after sentinel validation passes.
+- 100% protected-content preservation
+- zero safety-sensitive omissions or changed conditions
+- at least 95% adjudicated meaning acceptance
+- a Wilson lower bound of at least 90% for meaning acceptance
+- no increase in deterministic violations on previously clean input
 
-Protected spans include configured terms and part numbers. They also include identifiers, URLs, code, and other caller-supplied ranges. Numbers and units receive rule-aware comparison because an STE rewrite can change presentation without permission to change value.
+When two candidates differ by less than 3 absolute percentage points in meaning acceptance, or uncertainty includes that difference, they are tied. The smaller, faster, simpler, and safer candidate wins.
 
-## Analysis operation
+## Pretraining contamination
 
-The transport-independent analysis operation accepts the following request. `document_type` is `descriptive`, `procedural`, `mixed`, or `unknown`.
+Every model manifest records the base model and immutable revision plus `known_absent`, `known_present`, or `unknown` pretraining contamination. Unknown contamination is disclosed as a warning.
 
-```json
-{
-  "text": "The component should have been removed.",
-  "standard_issue": "9",
-  "project_dictionary": null,
-  "document_type": "descriptive"
-}
-```
+Standard examples cannot be the sole release evidence for a model with known or unknown exposure to the standard. Natural technical passages, document-held splits, time holdouts, and model-family holdouts remain separate result strata. A contaminated diagnostic result cannot promote a model by itself.
 
-It returns:
+## Model releases
 
-```json
-{
-  "findings": [],
-  "coverage": [],
-  "revisions": {
-    "standard": "issue-9@sha256:...",
-    "checker": "...",
-    "detector": "..."
-  }
-}
-```
+Detector and rewriter manifests independently pin:
 
-`coverage` lists every applicable rule and whether its checks passed, failed, did not run, or require review. Results are deterministic when the input, configuration, standard pack, checker revision, detector revision, and thresholds do not change.
+- model ID, role, and semantic release
+- artifact and evaluation digests
+- standard issue
+- base model ID and revision
+- contamination assessment
+- dataset digests
+- registered thresholds
+- protected-content, span, and detector-hint settings
+- maintainer selection authority
 
-## Rewrite operation
+Detector releases require rule macro F1, span F1, and calibration thresholds. Rewriter releases require meaning-preservation, protected-content, and deterministic non-regression thresholds. Models do not select or approve themselves.
 
-The rewrite operation accepts the analysis input plus rewrite settings and returns one candidate:
+## Runtime and security
 
-```json
-{
-  "candidate": "Remove the component.",
-  "candidate_status": "review_required",
-  "diff": [],
-  "before": {
-    "findings": []
-  },
-  "after": {
-    "findings": []
-  },
-  "protected_spans": {
-    "status": "passed"
-  },
-  "revisions": {
-    "standard": "issue-9@sha256:...",
-    "checker": "...",
-    "detector": "...",
-    "rewriter": "..."
-  }
-}
-```
+All analysis is deterministic when the text, project dictionary, reviewed pack, checker revision, detector revision, and thresholds are fixed.
 
-Candidate statuses are `review_required` and `rejected`. A candidate is rejected after a protected-span failure, malformed model output, resource-limit failure, or configured safety veto. The system does not produce an `approved` status. Approval belongs to the document owner.
-
-## Dataset records
-
-Detector and rewriter training use one shared record format.
-
-```json
-{
-  "id": "manual-17/paragraph-42",
-  "document_id": "manual-17",
-  "unit_type": "paragraph",
-  "source": "The original complicated text.",
-  "annotations": [
-    {
-      "rule_id": "3.4",
-      "label": "violation",
-      "spans": [
-        {
-          "start": 13,
-          "end": 25
-        }
-      ],
-      "label_source": "human_reviewed",
-      "review_state": "adjudicated"
-    }
-  ],
-  "accepted_rewrites": ["The clear STE text."],
-  "protected_spans": [],
-  "split": "train",
-  "provenance": {
-    "source_collection": "example",
-    "source_record": "17/42"
-  }
-}
-```
-
-### Dataset fields
-
-| Field | Required | Type | Meaning |
-| --- | --- | --- | --- |
-| `id` | Yes | string | Stable row identity within a dataset revision. |
-| `document_id` | Yes | string | Source-document identity and split boundary. |
-| `unit_type` | Yes | enum | `sentence`, `paragraph`, `procedure_step`, `note`, `caution`, or `warning`. |
-| `source` | Yes | string | Original English text. |
-| `annotations` | Yes | array | Rule labels and source spans. An empty array means that no reviewed label is present. |
-| `accepted_rewrites` | No | string array | Human-accepted STE100 candidates. |
-| `protected_spans` | Yes | array | Half-open UTF-8 byte ranges that rewriting must preserve. |
-| `split` | Yes | enum | Dataset role. |
-| `provenance` | Yes | object | Source collection and stable source identity. |
-
-An annotation requires `rule_id`, `label`, `spans`, `label_source`, and `review_state`. A weak annotation can include `confidence` and `generator_revision`. Human annotations can include reviewer identities in restricted review records; published training rows use an adjudication record ID instead.
-
-### Dataset rules
-
-`id` is unique within a dataset revision. `document_id` defines the split boundary. All units from one source document belong to one split.
-
-Annotation sources are `standard_example`, `deterministic_rule`, `spacy_weak`, `synthetic_transformation`, `teacher`, and `human_reviewed`. Review states are `unreviewed`, `reviewed`, and `adjudicated`.
-
-Weak or absent labels are not negative labels. Model-selection sets contain only human-reviewed or adjudicated labels. Accepted rewrites can contain more than one valid target.
-
-The split is one of `train`, `development`, `validation`, or `test`. Validation is report-only. Test remains sealed until the exact release candidate passes all earlier gates.
-
-## Model manifests
-
-Each learned artifact has a manifest containing:
-
-- model kind and architecture
-- model and tokenizer digests
-- standard-pack revision
-- training dataset revisions and split manifests
-- code and configuration revisions
-- training seed and numerical policy
-- rule thresholds for a detector
-- decoding settings for a rewriter
-- evaluation report revision
-- registered role and approval state
-
-A model artifact cannot replace its manifest with a later report. A new manifest identifies a new artifact revision.
-
-## Runtime sequence
-
-Analysis runs in this order:
-
-1. Validate request and resource limits.
-2. Load and validate local standard and project data.
-3. Parse the document and identify protected spans.
-4. Run deterministic checks.
-5. Run the learned detector when configured.
-6. Produce findings and complete coverage.
-
-Rewriting continues from the same parsed document:
-
-1. Select one supported document unit.
-2. Replace protected spans with sentinels.
-3. Generate one candidate.
-4. Validate sentinels and restore original content.
-5. Parse and check the candidate.
-6. Compare structure and all facts, including numbers and units.
-7. Return the candidate and diff together with checks and review requirements.
-
-No runtime step downloads code, models, standards, or project data. Callers install or mount approved artifacts before startup.
-
-## Resource and safety limits
-
-The runtime applies fixed limits to input bytes, document units, model tokens, output tokens, processing time, and memory. An over-limit unit is not truncated. The operation returns a bounded error or marks the unit for review.
-
-Raw document text is not logged by default. Diagnostics use record IDs, counts, timings, model revisions, and rule IDs. Applications can store text only under their own explicit retention policy.
-
-Model output is always treated as text. Browser integrations insert it through text APIs and never parse it as markup.
-
-## Evaluation contracts
-
-Detector evaluation reports raw support, precision, recall, false positives, false negatives, span results, and calibration for every rule. It also reports false alarms per 1,000 words and results by document collection.
-
-Rewrite evaluation reports violations removed, violations introduced, accepted rewrites, meaning-preservation judgments, omitted or added facts, protected-content results, changes to valid input, and document-structure results. Readability metrics can be diagnostic but cannot select a release on their own.
-
-A safety-sensitive omission or changed protected fact vetoes release even when aggregate quality improves.
+The runtime applies bounded input and output limits. It does not truncate over-limit technical content. Raw text is not logged by default. Model output is handled as text and is never parsed as markup.
 
 ## Boundaries
 
-This system assists authors and reviewers. It does not replace the ASD-STE100 standard, an organization’s terminology process, or human approval of technical content.
+This system assists authors and reviewers. It does not replace the ASD-STE100 standard, an organization's terminology process, or human approval of technical content.
 
-The detector does not prove that text without findings is compliant. The rewriter does not prove that its candidate preserves all intended meaning. Rules outside automatic coverage remain visible in the response.
-
-The repository’s MIT license covers original code and documentation. ASD source material retains the copyright terms described in [`../NOTICE`](../NOTICE).
+The repository's MIT license covers original code and documentation. ASD source material retains the terms described in [`../NOTICE`](../NOTICE).
