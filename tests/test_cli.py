@@ -103,6 +103,18 @@ def test_cli_rejects_invalid_project_dictionary(
     assert json.loads(capsys.readouterr().out)["valid"] is False
 
 
+def test_cli_general_recommendation_does_not_fail_analysis(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    source = tmp_path / "recommendation.txt"
+    source.write_text("Use e.g. in this example.", encoding="utf-8")
+    assert main(["analyze", str(source), "--format", "json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    finding = next(item for item in payload["findings"] if item["rule_id"] == "GR-6")
+    assert finding["kind"] == "human_review"
+
+
 def test_cli_runs_pinned_spacy_checks(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

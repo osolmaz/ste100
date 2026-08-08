@@ -97,9 +97,44 @@ def test_american_spelling_message_gives_replacement() -> None:
     assert "tire" in finding.message
 
 
-def test_omitted_that_recommendation() -> None:
-    assert _findings("Make sure the valve is open.", "GR-1")
-    assert _findings("Make sure that the valve is open.", "GR-1") == []
+@pytest.mark.parametrize(
+    ("text", "rule_id"),
+    [
+        ("Use a tool, e.g. a wrench.", "GR-6"),
+        ("The operator puts his tools here.", "GR-7"),
+    ],
+)
+def test_general_recommendations_never_create_violations(text: str, rule_id: str) -> None:
+    findings = [item for item in analyze(text).findings if item.rule_id == rule_id]
+    assert findings
+    assert {item.kind for item in findings} == {FindingKind.HUMAN_REVIEW}
+
+
+def test_protected_values_are_excluded_from_prose_checks() -> None:
+    text = "https://example.test/colour COLOUR-123 `colour; don't` colour"
+    result = analyze(text)
+    spelling = [item for item in result.findings if item.rule_id == "1.14"]
+    assert [(item.excerpt, item.kind) for item in spelling] == [("colour", FindingKind.VIOLATION)]
+    assert not [item for item in result.findings if item.rule_id in {"4.2", "8.1"}]
+
+
+def test_project_terms_are_excluded_from_spelling_checks() -> None:
+    project = ProjectDictionary(
+        format_version="1",
+        terms=(
+            ProjectTerm(
+                term="colour sensor",
+                category="technical_noun",
+                meaning="A project-defined sensor",
+                source="project glossary",
+            ),
+        ),
+    )
+    assert not [
+        item
+        for item in analyze("Check the colour sensor.", project_dictionary=project).findings
+        if item.rule_id == "1.14"
+    ]
 
 
 @pytest.mark.parametrize("text", ["Install the cover (item 2.", "Install item 2)."])

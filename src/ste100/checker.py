@@ -66,8 +66,13 @@ _GENDERED_RE = re.compile(
     r"\b(?:he|she|him|her|his|hers|himself|herself|manpower|man-hours?|mankind)\b",
     re.IGNORECASE,
 )
-_OMITTED_THAT_RE = re.compile(
-    r"\b(?:make\s+sure|recommend(?:s|ed)?|show(?:s|ed)?)\s+(?!that\b)", re.IGNORECASE
+_PROTECTED_VALUE_RE = re.compile(
+    r"https?://[^\s<>()]+"
+    r"|```[\s\S]*?```"
+    r"|`[^`\n]+`"
+    r"|\b[A-Z][A-Z0-9]*(?:[-_/][A-Z0-9]+)+\b"
+    r"|\b[A-Za-z][A-Za-z0-9]*(?:[_/][A-Za-z0-9_-]+)+\b"
+    r"|\b\d+(?:[.,]\d+)?(?:\s*(?:°?[A-Za-z%]+(?:[/-][A-Za-z%]+)*))?\b"
 )
 _LIST_WITHOUT_COLON_RE = re.compile(
     r"(?m)^(?!\s*(?:[-*•]|[a-z][.)]|\d+(?:\.\d+)*[.)])\s)"
@@ -87,7 +92,7 @@ _SPACY_POS = {
     "CCONJ": "conjunction",
     "SCONJ": "conjunction",
 }
-_ALWAYS_APPLICABLE = frozenset({"1.1", "1.14", "4.2", "8.1", "8.3", "9.3", "GR-1", "GR-6", "GR-7"})
+_ALWAYS_APPLICABLE = frozenset({"1.1", "1.14", "4.2", "8.1", "8.3", "9.3", "GR-6", "GR-7"})
 
 
 def _finding_id(rule_id: str, checker_id: str, byte_range: ByteRange | None, message: str) -> str:
@@ -123,28 +128,48 @@ def _regex_findings(
     rule_id: str,
     checker_id: str,
     message: str,
+    kind: FindingKind = FindingKind.VIOLATION,
+    excluded: tuple[ByteRange, ...] = (),
 ) -> list[Finding]:
     offsets = char_to_byte_offsets(text)
-    return [
-        _finding(
-            text,
-            rule_id=rule_id,
-            checker_id=checker_id,
-            kind=FindingKind.VIOLATION,
-            message=message,
-            byte_range=ByteRange(start=offsets[match.start()], end=offsets[match.end()]),
+    findings: list[Finding] = []
+    for match in pattern.finditer(text):
+        byte_range = ByteRange(start=offsets[match.start()], end=offsets[match.end()])
+        if _overlaps(byte_range, excluded):
+            continue
+        findings.append(
+            _finding(
+                text,
+                rule_id=rule_id,
+                checker_id=checker_id,
+                kind=kind,
+                message=message,
+                byte_range=byte_range,
+            )
         )
-        for match in pattern.finditer(text)
+    return findings
+
+
+def _protected_ranges(text: str, project: ProjectDictionary | None) -> tuple[ByteRange, ...]:
+    offsets = char_to_byte_offsets(text)
+    ranges = [
+        ByteRange(start=offsets[match.start()], end=offsets[match.end()])
+        for match in _PROTECTED_VALUE_RE.finditer(text)
     ]
+    ranges.extend(match.byte_range for match in _project_matches(text, project))
+    return tuple(ranges)
 
 
-def _spelling_findings(text: str) -> list[Finding]:
+def _spelling_findings(text: str, excluded: tuple[ByteRange, ...]) -> list[Finding]:
     pattern = re.compile(
         rf"\b(?:{'|'.join(re.escape(word) for word in _AMERICAN_SPELLINGS)})\b", re.IGNORECASE
     )
     offsets = char_to_byte_offsets(text)
     findings: list[Finding] = []
     for match in pattern.finditer(text):
+        byte_range = ByteRange(start=offsets[match.start()], end=offsets[match.end()])
+        if _overlaps(byte_range, excluded):
+            continue
         replacement = _AMERICAN_SPELLINGS[match.group().casefold()]
         findings.append(
             _finding(
@@ -153,17 +178,20 @@ def _spelling_findings(text: str) -> list[Finding]:
                 checker_id="american_spelling",
                 kind=FindingKind.VIOLATION,
                 message=f"Use American spelling {replacement!r} instead of {match.group()!r}.",
-                byte_range=ByteRange(start=offsets[match.start()], end=offsets[match.end()]),
+                byte_range=byte_range,
             )
         )
     return findings
 
 
-def _parenthesis_findings(text: str) -> list[Finding]:
+def _parenthesis_findings(text: str, excluded: tuple[ByteRange, ...]) -> list[Finding]:
     offsets = char_to_byte_offsets(text)
     stack: list[int] = []
     findings: list[Finding] = []
     for index, character in enumerate(text):
+        character_range = ByteRange(start=offsets[index], end=offsets[index + 1])
+        if _overlaps(character_range, excluded):
+            continue
         if character == "(":
             stack.append(index)
         elif character == ")":
@@ -177,7 +205,7 @@ def _parenthesis_findings(text: str) -> list[Finding]:
                         checker_id="balanced_parentheses",
                         kind=FindingKind.VIOLATION,
                         message="Closing parenthesis has no matching opening parenthesis.",
-                        byte_range=ByteRange(start=offsets[index], end=offsets[index + 1]),
+                        byte_range=character_range,
                     )
                 )
     for index in stack:
@@ -267,16 +295,15 @@ def _unapproved_findings(
 def _vocabulary_findings(
     document: Document,
     standard: StandardPack,
-    project: ProjectDictionary | None,
+    excluded: tuple[ByteRange, ...],
 ) -> list[Finding]:
-    project_ranges = tuple(match.byte_range for match in _project_matches(document.text, project))
-    findings, phrase_ranges = _dictionary_phrase_findings(document.text, standard, project_ranges)
+    findings, phrase_ranges = _dictionary_phrase_findings(document.text, standard, excluded)
     index = standard.dictionary_by_word
     for sentence in document.sentences:
         for token in sentence.tokens:
             if (
                 not _LEXICAL_RE.fullmatch(token.text)
-                or _overlaps(token.byte_range, project_ranges)
+                or _overlaps(token.byte_range, excluded)
                 or _overlaps(token.byte_range, phrase_ranges)
             ):
                 continue
@@ -457,6 +484,33 @@ def _is_imperative(sentence: LinguisticSentence) -> bool:
     return not any(token.dependency in {"nsubj", "nsubjpass"} for token in sentence.tokens)
 
 
+def _omits_that_before_finite_clause(sentence: LinguisticSentence) -> bool:
+    lemmas = [token.lemma for token in sentence.tokens]
+    trigger = any(lemma in {"recommend", "show"} for lemma in lemmas) or any(
+        lemmas[index : index + 2] == ["make", "sure"] for index in range(len(lemmas) - 1)
+    )
+    finite_clause = any(token.dependency == "ccomp" for token in sentence.tokens)
+    explicit_that = any(
+        token.lemma == "that" and token.dependency == "mark" for token in sentence.tokens
+    )
+    return trigger and finite_clause and not explicit_that
+
+
+def _omitted_that_findings(document: Document, sentence: LinguisticSentence) -> list[Finding]:
+    if not _omits_that_before_finite_clause(sentence):
+        return []
+    return [
+        _finding(
+            document.text,
+            rule_id="GR-1",
+            checker_id="omitted_that",
+            kind=FindingKind.HUMAN_REVIEW,
+            message="Consider 'that' before this subordinate clause to prevent ambiguity.",
+            byte_range=sentence.byte_range,
+        )
+    ]
+
+
 def _linguistic_findings(
     document: Document,
     standard: StandardPack,
@@ -479,6 +533,7 @@ def _linguistic_findings(
         "5.3",
         "5.5",
         "7.2",
+        "GR-1",
     }
     findings: list[Finding] = []
     project_matches = _project_matches(document.text, project)
@@ -487,6 +542,7 @@ def _linguistic_findings(
     for sentence in analyzer.analyze(document.text):
         imperative = _is_imperative(sentence)
         sentence_block = _block_for_token(document, sentence.tokens[0]) if sentence.tokens else None
+        findings.extend(_omitted_that_findings(document, sentence))
         if (
             sentence_block is not None
             and sentence_block.kind is BlockKind.PROCEDURE
@@ -757,6 +813,7 @@ def analyze(
             details = "; ".join(issue.message for issue in report.issues)
             raise ValueError(f"invalid project dictionary: {details}")
     document = parse_document(text)
+    protected_ranges = _protected_ranges(text, project_dictionary)
     findings: list[Finding] = []
     findings.extend(
         _regex_findings(
@@ -765,6 +822,7 @@ def analyze(
             rule_id="8.1",
             checker_id="semicolon",
             message="Do not use a semicolon.",
+            excluded=protected_ranges,
         )
     )
     findings.extend(
@@ -774,9 +832,10 @@ def analyze(
             rule_id="4.2",
             checker_id="contraction",
             message="Do not use a contraction.",
+            excluded=protected_ranges,
         )
     )
-    findings.extend(_spelling_findings(text))
+    findings.extend(_spelling_findings(text, protected_ranges))
     findings.extend(
         _regex_findings(
             text,
@@ -784,6 +843,8 @@ def analyze(
             rule_id="GR-6",
             checker_id="latin_abbreviation",
             message="Write the expression in full instead of a Latin abbreviation.",
+            kind=FindingKind.HUMAN_REVIEW,
+            excluded=protected_ranges,
         )
     )
     findings.extend(
@@ -793,20 +854,13 @@ def analyze(
             rule_id="GR-7",
             checker_id="gendered_term",
             message="Use neutral and inclusive wording.",
+            kind=FindingKind.HUMAN_REVIEW,
+            excluded=protected_ranges,
         )
     )
-    findings.extend(
-        _regex_findings(
-            text,
-            _OMITTED_THAT_RE,
-            rule_id="GR-1",
-            checker_id="omitted_that",
-            message="Use 'that' after this expression when it introduces a clause.",
-        )
-    )
-    findings.extend(_parenthesis_findings(text))
+    findings.extend(_parenthesis_findings(text, protected_ranges))
     findings.extend(_list_findings(text))
-    findings.extend(_vocabulary_findings(document, standard, project_dictionary))
+    findings.extend(_vocabulary_findings(document, standard, protected_ranges))
     structure_findings, applicable = _structure_findings(document)
     findings.extend(structure_findings)
     linguistic_findings, linguistic_applicable = _linguistic_findings(

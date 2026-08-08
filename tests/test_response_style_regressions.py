@@ -5,7 +5,10 @@ from pathlib import Path
 from typing import cast
 
 from ste100.checker import analyze
+from ste100.linguistics import SpacyAnalyzer
 from ste100.models import FindingKind
+
+_SPACY = SpacyAnalyzer("en_core_web_sm")
 
 
 def _fixtures() -> list[dict[str, object]]:
@@ -13,6 +16,11 @@ def _fixtures() -> list[dict[str, object]]:
         Path("tests/fixtures/sanitized-response-style.json").read_text(encoding="utf-8")
     )
     return cast(list[dict[str, object]], value)
+
+
+def _reported_rules(text: str, *, with_spacy: bool = False) -> set[str]:
+    analyzer = _SPACY if with_spacy else None
+    return {finding.rule_id for finding in analyze(text, linguistic_analyzer=analyzer).findings}
 
 
 def _failed_rules(text: str) -> set[str]:
@@ -39,8 +47,13 @@ def test_sanitized_rule_repairs_remove_the_expected_mechanical_failure() -> None
             continue
         initial = str(record["initial_assistant_response"])
         final = str(record["final_assistant_response"])
-        assert expected <= _failed_rules(initial), record["fixture_id"]
-        assert not (expected & _failed_rules(final)), record["fixture_id"]
+        observed = (
+            _reported_rules(initial, with_spacy="GR-1" in expected)
+            if expected <= {"GR-1", "GR-6", "GR-7"}
+            else _failed_rules(initial)
+        )
+        assert expected <= observed, record["fixture_id"]
+        assert not (expected & _reported_rules(final)), record["fixture_id"]
         checked += 1
     assert checked >= 12
 

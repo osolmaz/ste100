@@ -15,7 +15,6 @@ from ste100.extract import extract_rule_candidates, sha256_digest
 from ste100.models import (
     ConformanceRecord,
     DictionaryEntry,
-    DictionaryMeaning,
     ExpectedCounts,
     ReviewState,
     RuleRecord,
@@ -240,25 +239,13 @@ def build_dictionary(text: str) -> tuple[DictionaryEntry, ...]:
     entries: list[DictionaryEntry] = []
     for row_number, row in enumerate(_dictionary_rows(text), 1):
         word, aliases = _canonical_word(row.word)
-        meaning_text = " ".join(cell for cell in row.column_two if cell)
-        meanings = (
-            (
-                DictionaryMeaning(
-                    meaning_id=f"meaning-{hashlib.sha256(f'{word}:{row_number}'.encode()).hexdigest()[:12]}",
-                    text=meaning_text or "Approved use listed in the Issue 9 dictionary.",
-                    rule_ids=("1.1",),
-                ),
-            )
-            if row.status == "approved"
-            else ()
-        )
         entries.append(
             DictionaryEntry(
                 entry_id=_entry_id(row.status, word, row.part_of_speech, row_number),
                 word=word,
                 status=row.status,
                 parts_of_speech=(row.part_of_speech,),
-                approved_meanings=meanings,
+                approved_meanings=(),
                 approved_forms=_forms(row, aliases),
                 alternatives=_alternatives(row),
                 review_state=ReviewState.REVIEWED,
