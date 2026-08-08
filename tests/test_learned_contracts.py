@@ -11,13 +11,37 @@ from pydantic import ValidationError
 from ste100.bootstrap import weak_annotations
 from ste100.contracts import StaticRewriter
 from ste100.model_release import validate_model_release
-from ste100.models import ModelManifest
+from ste100.models import Finding, ModelManifest
 from ste100.protection import protect_text
 from ste100.rewrite import rewrite_candidate
 
 
 def _digest(path: Path) -> str:
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+@dataclass
+class _CapturingRewriter:
+    model_id: str
+    candidate: str
+    seen_findings: tuple[Finding, ...] = ()
+
+    def rewrite(self, masked_text: str, findings: tuple[Finding, ...]) -> str:
+        del masked_text
+        self.seen_findings = findings
+        return self.candidate
+
+
+def test_rewriter_hints_default_to_disabled() -> None:
+    text = "Don't set UNIT_A now."
+    protected = protect_text(text)
+    unhinted = _CapturingRewriter(model_id="unhinted", candidate=protected.masked_text)
+    rewrite_candidate(text, rewriter=unhinted)
+    assert unhinted.seen_findings == ()
+
+    hinted = _CapturingRewriter(model_id="hinted", candidate=protected.masked_text)
+    rewrite_candidate(text, rewriter=hinted, use_detector_hints=True)
+    assert any(finding.rule_id == "4.2" for finding in hinted.seen_findings)
 
 
 def test_rewriter_output_is_untrusted_protected_and_rechecked() -> None:

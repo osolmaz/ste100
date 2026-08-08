@@ -40,7 +40,7 @@ def rewrite_candidate(
     standard: StandardPack | None = None,
     project_dictionary: ProjectDictionary | None = None,
     caller_ranges: tuple[ByteRange, ...] = (),
-    use_detector_hints: bool = True,
+    use_detector_hints: bool = False,
 ) -> RewriteOutcome:
     """Create and recheck a candidate; this function never certifies STE compliance."""
 

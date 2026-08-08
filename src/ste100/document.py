@@ -21,6 +21,7 @@ _WORD_RE = re.compile(
 _PROCEDURE_RE = re.compile(r"^\s*(?:\d+(?:\.\d+)*[.)]|[a-z][.)])\s+", re.IGNORECASE)
 _PAREN_RE = re.compile(r"\(([^()\n]+)\)")
 _SAFETY_LABEL_RE = re.compile(r"^\s*(?:WARNING|CAUTION):\s*", re.IGNORECASE)
+_VERTICAL_LIST_RE = re.compile(r":\s*\r?\n\s*(?:[-*•]|[A-Z][.)])\s+")
 _LIST_RE = re.compile(r"^\s*(?:[-*•]|[A-Z][.)])\s+")
 
 
@@ -144,7 +145,16 @@ def _sentence_terminates(
     if character not in terminators or nested:
         return False
     numbered_marker = character == "." and text[:index].strip().isdigit() and index < 6
-    return character != "." or not (_is_abbreviation(text, index) or numbered_marker)
+    decimal_point = (
+        character == "."
+        and index > 0
+        and index + 1 < len(text)
+        and text[index - 1].isdigit()
+        and text[index + 1].isdigit()
+    )
+    return character != "." or not (
+        _is_abbreviation(text, index) or numbered_marker or decimal_point
+    )
 
 
 def _outer_sentence_ranges(
@@ -276,7 +286,9 @@ def parse_document(text: str) -> Document:
         block_text = text[char_start:char_end]
         kind = _classify_block(block_text)
         sentence_items: list[Sentence] = []
-        colon_terminates = kind is BlockKind.LIST
+        colon_terminates = (
+            kind is BlockKind.LIST or _VERTICAL_LIST_RE.search(block_text) is not None
+        )
         for relative_start, relative_end in sentence_ranges(
             block_text,
             colon_terminates=colon_terminates,
