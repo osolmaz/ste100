@@ -19,6 +19,8 @@ _WORD_RE = re.compile(
     r"|\b[A-Za-z][A-Za-z0-9]*(?:'[A-Za-z]+)?\b",
 )
 _PROCEDURE_RE = re.compile(r"^\s*(?:\d+(?:\.\d+)*[.)]|[a-z][.)])\s+", re.IGNORECASE)
+_PAREN_RE = re.compile(r"\(([^()\n]+)\)")
+_SAFETY_LABEL_RE = re.compile(r"^\s*(?:WARNING|CAUTION):\s*", re.IGNORECASE)
 _LIST_RE = re.compile(r"^\s*(?:[-*•]|[A-Z][.)])\s+")
 
 
@@ -145,9 +147,11 @@ def _sentence_terminates(
     return character != "." or not (_is_abbreviation(text, index) or numbered_marker)
 
 
-def sentence_ranges(text: str, *, colon_terminates: bool = False) -> tuple[tuple[int, int], ...]:
-    """Return trimmed character ranges for sentences without changing source text."""
-
+def _outer_sentence_ranges(
+    text: str,
+    *,
+    colon_terminates: bool = False,
+) -> tuple[tuple[int, int], ...]:
     ranges: list[tuple[int, int]] = []
     start = 0
     depth = 0
@@ -177,6 +181,27 @@ def sentence_ranges(text: str, *, colon_terminates: bool = False) -> tuple[tuple
     if trailing is not None:
         ranges.append(trailing)
     return tuple(ranges)
+
+
+def _parenthetical_sentence_ranges(text: str) -> tuple[tuple[int, int], ...]:
+    ranges: list[tuple[int, int]] = []
+    for match in _PAREN_RE.finditer(text):
+        inner = match.group(1)
+        if len(_WORD_RE.findall(inner)) < 2:
+            continue
+        for start, end in _outer_sentence_ranges(inner):
+            ranges.append((match.start(1) + start, match.start(1) + end))
+    return tuple(ranges)
+
+
+def sentence_ranges(text: str, *, colon_terminates: bool = False) -> tuple[tuple[int, int], ...]:
+    """Return outer and parenthetical sentence ranges without changing source text."""
+
+    ranges = (
+        *_outer_sentence_ranges(text, colon_terminates=colon_terminates),
+        *_parenthetical_sentence_ranges(text),
+    )
+    return tuple(sorted(ranges, key=lambda item: (item[0], -item[1])))
 
 
 def _classify_block(text: str) -> BlockKind:
@@ -219,6 +244,29 @@ def _block_char_ranges(text: str) -> tuple[tuple[int, int], ...]:
     return tuple(ranges)
 
 
+def _tokens_for_sentence(
+    sentence_text: str,
+    *,
+    absolute_start: int,
+    full_text: str,
+    block_kind: BlockKind,
+) -> tuple[Token, ...]:
+    content_start = 0
+    if block_kind is BlockKind.PROCEDURE:
+        marker = _PROCEDURE_RE.match(sentence_text)
+        if marker is not None:
+            content_start = marker.end()
+    if block_kind in {BlockKind.WARNING, BlockKind.CAUTION}:
+        label = _SAFETY_LABEL_RE.match(sentence_text)
+        if label is not None:
+            content_start = label.end()
+    return tokenize(
+        sentence_text[content_start:],
+        char_start=absolute_start + content_start,
+        full_text=full_text,
+    )
+
+
 def parse_document(text: str) -> Document:
     """Parse text into blocks and sentences while preserving all source offsets."""
 
@@ -243,10 +291,11 @@ def parse_document(text: str) -> Document:
                         start=offsets[absolute_start],
                         end=offsets[absolute_end],
                     ),
-                    tokens=tokenize(
+                    tokens=_tokens_for_sentence(
                         sentence_text,
-                        char_start=absolute_start,
+                        absolute_start=absolute_start,
                         full_text=text,
+                        block_kind=kind,
                     ),
                 )
             )

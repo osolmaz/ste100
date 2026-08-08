@@ -153,11 +153,14 @@ The initial vertical slice implements:
 
 - reviewed approved and unapproved vocabulary lookup for the mechanical part of Rule 1.1
 - contraction detection for the mechanical part of Rule 4.2
-- the 20-word procedure sentence limit in Rule 5.1
+- the 20-word procedure and safety-instruction sentence limit in Rule 5.1
 - the 25-word descriptive sentence limit in Rule 6.3
 - the six-sentence paragraph limit in Rule 6.6
 - the semicolon prohibition in Rule 8.1
-- word-count behavior used by Rules 8.4 through 8.7
+- complete mechanical behavior for Rules 8.4, 8.5, and 8.7
+- partial Rule 8.6 handling for numbers, measurements, abbreviations, identifiers, and quoted text
+
+Rule 8.6 remains partial because unquoted titles, headings, labels, and multiword proper nouns need document context. It cannot return `passed` in the initial release.
 
 The conformance matrix exposes every other rule even when no checker exists.
 

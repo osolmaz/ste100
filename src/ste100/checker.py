@@ -57,7 +57,7 @@ _CHECKER_BY_RULE = {
     "8.6": "word_count",
     "8.7": "word_count",
 }
-_FULL_RULES = frozenset({"5.1", "6.3", "6.6", "8.1", "8.4", "8.5", "8.6", "8.7"})
+_FULL_RULES = frozenset({"5.1", "6.3", "6.6", "8.1", "8.4", "8.5", "8.7"})
 
 
 def _finding_id(rule_id: str, checker_id: str, byte_range: ByteRange | None, message: str) -> str:
@@ -211,7 +211,7 @@ def _length_findings(document: Document) -> tuple[list[Finding], set[str]]:
     findings: list[Finding] = []
     applicable: set[str] = set()
     for block in document.blocks:
-        if block.kind is BlockKind.PROCEDURE:
+        if block.kind in {BlockKind.PROCEDURE, BlockKind.WARNING, BlockKind.CAUTION}:
             applicable.add("5.1")
             findings.extend(
                 _sentence_limit_findings(

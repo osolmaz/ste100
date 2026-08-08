@@ -104,6 +104,14 @@ def test_protection_round_trip_preserves_all_facts() -> None:
     assert "`x += 1`" in restored
 
 
+@pytest.mark.parametrize("identifier", ["L42", "A320", "36L7"])
+def test_part_number_shapes_are_protected(identifier: str) -> None:
+    text = f"Install {identifier} now."
+    protected = protect_text(text)
+    assert identifier in protected.originals
+    assert any(span.kind == "identifier" for span in protected.spans)
+
+
 def test_protection_rejects_drop_duplicate_reorder_and_unknown() -> None:
     protected = protect_text("Move ID_A by 10 mm.")
     first, second = protected.sentinels

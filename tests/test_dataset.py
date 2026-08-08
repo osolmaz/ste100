@@ -166,6 +166,32 @@ def test_dataset_rejects_bad_id_digest_range_and_unreviewed_synthetic_parent() -
     }.issubset(codes)
 
 
+def test_dataset_rejects_violation_annotated_standard_parent() -> None:
+    parent = _record(
+        source_kind="standard_example",
+        source_id="negative-standard",
+        text="Bad example.",
+    ).model_copy(
+        update={
+            "annotations": (
+                ViolationAnnotation(
+                    rule_id="8.1",
+                    label="violation",
+                    annotator="reviewer",
+                ),
+            )
+        }
+    )
+    child = _record(
+        source_kind="synthetic",
+        source_id="from-negative",
+        text="Generated example.",
+        parent_record_ids=(parent.record_id,),
+    )
+    codes = {issue.code for issue in validate_dataset((parent, child)).issues}
+    assert "unclean_synthetic_parent" in codes
+
+
 def test_dataset_rejects_annotation_that_splits_utf8_character() -> None:
     record = _record(
         source_kind="technical_document",
