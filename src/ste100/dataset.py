@@ -187,10 +187,11 @@ def _parent_is_clean(parent: DatasetRecord) -> bool:
     clean_annotations = bool(parent.annotations) and all(
         annotation.label in {"no_violation", "exception"} for annotation in parent.annotations
     )
-    standard_positive = parent.source_kind == "standard_example" and parent.annotation_state in {
-        "reviewed",
-        "adjudicated",
-    }
+    standard_positive = (
+        parent.source_kind == "standard_example"
+        and parent.annotation_state in {"reviewed", "adjudicated"}
+        and clean_annotations
+    )
     reviewed_clean = parent.annotation_state == "adjudicated" and clean_annotations
     return standard_positive or reviewed_clean
 

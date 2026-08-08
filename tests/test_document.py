@@ -42,6 +42,24 @@ def test_word_count_exceptions_are_single_tokens() -> None:
     assert "https://example.com." in values
 
 
+def test_parenthetical_prose_is_also_a_separate_sentence() -> None:
+    text = "Make sure that the switch is released (the EMER legend is off)."
+    document = parse_document(text)
+    assert [sentence.text for sentence in document.sentences] == [
+        text,
+        "the EMER legend is off",
+    ]
+    assert document.sentences[0].word_count == 8
+    assert document.sentences[1].word_count == 5
+
+
+def test_procedure_marker_is_not_a_counted_word() -> None:
+    text = "1. " + " ".join(f"word{index}" for index in range(20)) + "."
+    sentence = parse_document(text).sentences[0]
+    assert sentence.word_count == 20
+    assert sentence.tokens[0].text == "word0"
+
+
 def test_slice_bytes_rejects_mid_character_boundary() -> None:
     with pytest.raises(ValueError, match="UTF-8"):
         slice_bytes("é", ByteRange(start=1, end=2))

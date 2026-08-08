@@ -106,13 +106,26 @@ def test_sentence_and_paragraph_limits_use_block_context() -> None:
     )
 
 
+def test_safety_instruction_uses_procedure_sentence_limit() -> None:
+    warning = "WARNING: " + " ".join(f"word{index}" for index in range(21)) + "."
+    result = analyze(warning)
+    finding = next(item for item in result.findings if item.rule_id == "5.1")
+    assert "maximum is 20" in finding.message
+    assert (
+        next(item for item in result.coverage if item.rule_id == "5.1").status
+        is CoverageStatus.FAILED
+    )
+
+
 def test_full_check_can_pass_but_partial_check_never_implies_a_pass() -> None:
     result = analyze("Install the unit.")
     semicolon = next(item for item in result.coverage if item.rule_id == "8.1")
     contraction = next(item for item in result.coverage if item.rule_id == "4.2")
+    grouped_elements = next(item for item in result.coverage if item.rule_id == "8.6")
 
     assert semicolon.status is CoverageStatus.PASSED
     assert contraction.status is CoverageStatus.NOT_CHECKED
+    assert grouped_elements.status is CoverageStatus.NOT_CHECKED
 
 
 def test_detector_findings_are_probable_and_report_only() -> None:

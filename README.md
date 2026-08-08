@@ -7,7 +7,7 @@ It does not certify official ASD-STE100 compliance. Every analysis reports cover
 ## Current capabilities
 
 - Lossless document parsing with half-open UTF-8 byte offsets
-- Deterministic checks for semicolons, contractions, sentence length, paragraph length, and STE word-count rules
+- Deterministic checks for semicolons, contractions, procedure and safety sentence length, paragraph length, and the mechanical parts of STE word counting
 - Reviewed standard-pack validation with digests, expected counts, references, and path-containment checks
 - Project terminology validation and longest-match term handling
 - Protected spans for terms, numbers, units, identifiers, URLs, code, and caller-supplied ranges
@@ -72,7 +72,7 @@ ste100 validate-project-dictionary project-terms.json
 ste100 validate-dataset records.jsonl
 ```
 
-Explain one rule and its current automatic coverage:
+Explain one rule and its current automatic coverage. Without a reviewed pack, the command omits the standard requirement text:
 
 ```sh
 ste100 explain 8.1

@@ -101,7 +101,7 @@ _CHECKERS_BY_RULE = {
     "8.6": ("word_count",),
     "8.7": ("word_count",),
 }
-_FULL_RULES = frozenset({"5.1", "6.3", "6.6", "8.1", "8.4", "8.5", "8.6", "8.7"})
+_FULL_RULES = frozenset({"5.1", "6.3", "6.6", "8.1", "8.4", "8.5", "8.7"})
 
 
 def sha256_digest(data: bytes) -> str:
