@@ -11,7 +11,7 @@ from pydantic import ValidationError
 
 from ste100.document import char_to_byte_offsets
 from ste100.models import ByteRange, ProjectDictionary, ProjectTerm
-from ste100.standard import StandardPack, ValidationIssue, ValidationReport
+from ste100.standard import ValidationIssue, ValidationReport
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,11 +26,7 @@ def load_project_dictionary(path: Path) -> ProjectDictionary:
         return ProjectDictionary.model_validate(json.load(handle))
 
 
-def validate_project_dictionary(
-    project: ProjectDictionary,
-    *,
-    standard: StandardPack | None = None,
-) -> ValidationReport:
+def validate_project_dictionary(project: ProjectDictionary) -> ValidationReport:
     """Reject ambiguous forms and contradictions with reviewed vocabulary."""
 
     issues: list[ValidationIssue] = []
@@ -55,17 +51,6 @@ def validate_project_dictionary(
                     )
                 )
             owners[key] = term.term
-            if standard is not None:
-                for entry in standard.dictionary_by_word.get(key, ()):
-                    if entry.status == "unapproved":
-                        issues.append(
-                            ValidationIssue(
-                                code="standard_conflict",
-                                message=(
-                                    f"project term form is unapproved in the standard: {form}"
-                                ),
-                            )
-                        )
     return ValidationReport(tuple(issues))
 
 

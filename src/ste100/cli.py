@@ -69,7 +69,7 @@ def _analyze(args: argparse.Namespace) -> int:
         if project is None or not report.valid:
             _json(_report_payload(report))
             return 2
-        report = validate_project_dictionary(project, standard=standard)
+        report = validate_project_dictionary(project)
         if not report.valid:
             _json(_report_payload(report))
             return 2
@@ -101,7 +101,7 @@ def _analyze(args: argparse.Namespace) -> int:
 def _validate_project(args: argparse.Namespace) -> int:
     project, report = parse_project_dictionary(Path(args.file))
     if project is not None and report.valid:
-        report = validate_project_dictionary(project, standard=_load_pack(args.standard_pack))
+        report = validate_project_dictionary(project)
     _json(_report_payload(report))
     return 0 if report.valid else 1
 
@@ -154,7 +154,6 @@ def _parser() -> argparse.ArgumentParser:
         help="validate caller-approved technical terminology",
     )
     project.add_argument("file")
-    project.add_argument("--standard-pack")
     project.set_defaults(handler=_validate_project)
 
     explain = commands.add_parser("explain", help="explain one Issue 9 rule and its coverage")

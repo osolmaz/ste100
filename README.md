@@ -73,7 +73,7 @@ ste100 validate-project-dictionary project-terms.json
 ste100 analyze manual.txt --project-dictionary project-terms.json
 ```
 
-The validator rejects ambiguous forms, technical nouns longer than three words, and direct conflicts with unapproved dictionary entries.
+The validator rejects ambiguous forms and technical nouns longer than three words. A project term can use a general word that the standard dictionary does not approve for that part of speech.
 
 ## Rules and standard packs
 
