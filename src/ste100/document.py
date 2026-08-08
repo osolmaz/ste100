@@ -22,6 +22,7 @@ _WORD_RE = re.compile(
 _PROCEDURE_RE = re.compile(r"^\s*(?:\d+(?:\.\d+)*[.)]|[a-z][.)])\s+", re.IGNORECASE)
 _PAREN_RE = re.compile(r"\(([^()\n]+)\)")
 _SAFETY_LABEL_RE = re.compile(r"^\s*(?:WARNING|CAUTION):\s*", re.IGNORECASE)
+_NOTE_LABEL_RE = re.compile(r"^\s*NOTE:\s*", re.IGNORECASE)
 _VERTICAL_LIST_RE = re.compile(r":\s*\r?\n\s*(?:[-*•]|[A-Za-z][.)]|\d+(?:\.\d+)*[.)])\s+")
 _LIST_RE = re.compile(r"^\s*(?:[-*•]|[A-Za-z][.)]|\d+(?:\.\d+)*[.)])\s+")
 
@@ -209,6 +210,8 @@ def _outer_sentence_ranges(
 
 
 def _parenthetical_sentence_ranges(text: str) -> tuple[tuple[int, int], ...]:
+    """Count prose in parentheses separately as required by Rule 8.5."""
+
     ranges: list[tuple[int, int]] = []
     for match in _PAREN_RE.finditer(text):
         inner = match.group(1)
@@ -283,6 +286,10 @@ def _tokens_for_sentence(
             content_start = marker.end()
     if block_kind in {BlockKind.WARNING, BlockKind.CAUTION}:
         label = _SAFETY_LABEL_RE.match(sentence_text)
+        if label is not None:
+            content_start = label.end()
+    if block_kind is BlockKind.NOTE:
+        label = _NOTE_LABEL_RE.match(sentence_text)
         if label is not None:
             content_start = label.end()
     return tokenize(
