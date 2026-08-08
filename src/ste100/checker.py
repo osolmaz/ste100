@@ -66,6 +66,7 @@ _GENDERED_RE = re.compile(
     r"\b(?:he|she|him|her|his|hers|himself|herself|manpower|man-hours?|mankind)\b",
     re.IGNORECASE,
 )
+_CODE_RE = re.compile(r"```[\s\S]*?```|`[^`\n]+`")
 _PROTECTED_VALUE_RE = re.compile(
     r"https?://[^\s<>()]+"
     r"|```[\s\S]*?```"
@@ -154,12 +155,16 @@ def _regex_findings(
     return findings
 
 
-def _protected_ranges(text: str, project: ProjectDictionary | None) -> tuple[ByteRange, ...]:
+def _pattern_ranges(text: str, pattern: re.Pattern[str]) -> tuple[ByteRange, ...]:
     offsets = char_to_byte_offsets(text)
-    ranges = [
+    return tuple(
         ByteRange(start=offsets[match.start()], end=offsets[match.end()])
-        for match in _PROTECTED_VALUE_RE.finditer(text)
-    ]
+        for match in pattern.finditer(text)
+    )
+
+
+def _protected_ranges(text: str, project: ProjectDictionary | None) -> tuple[ByteRange, ...]:
+    ranges = list(_pattern_ranges(text, _PROTECTED_VALUE_RE))
     ranges.extend(match.byte_range for match in _project_matches(text, project))
     return tuple(ranges)
 
@@ -892,6 +897,7 @@ def analyze(
             raise ValueError(f"invalid project dictionary: {details}")
     document = parse_document(text)
     protected_ranges = _protected_ranges(text, project_dictionary)
+    code_ranges = _pattern_ranges(text, _CODE_RE)
     findings: list[Finding] = []
     findings.extend(
         _regex_findings(
@@ -937,9 +943,9 @@ def analyze(
         )
     )
     findings.extend(_parenthesis_findings(text, protected_ranges))
-    findings.extend(_list_findings(text, protected_ranges))
+    findings.extend(_list_findings(text, code_ranges))
     findings.extend(_vocabulary_findings(document, standard, protected_ranges))
-    structure_findings, applicable = _structure_findings(document, protected_ranges)
+    structure_findings, applicable = _structure_findings(document, code_ranges)
     findings.extend(structure_findings)
     linguistic_findings, linguistic_applicable = _linguistic_findings(
         document,
