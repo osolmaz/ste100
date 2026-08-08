@@ -10,8 +10,9 @@ from ste100.models import ByteRange
 
 _SENTENCE_END = frozenset(".!?")
 _ABBREVIATIONS = frozenset({"e.g.", "i.e.", "etc.", "mr.", "mrs.", "ms.", "dr.", "fig."})
+_URL_RE = re.compile(r"https?://[^\s<>()]+(?<![.,;:!?])")
 _WORD_RE = re.compile(
-    r"https?://\S+"
+    r"https?://[^\s<>()]+(?<![.,;:!?])"
     r'|"[^"\n]+"'
     r"|\([^()\n]*\)"
     r"|\b\d+(?:[.,]\d+)?(?:\s*[A-Za-z°%]+)?\b"
@@ -134,17 +135,24 @@ def _trimmed_range(text: str, start: int, end: int) -> tuple[int, int] | None:
     return (start, end) if start < end else None
 
 
+def _is_line_marker_period(text: str, index: int) -> bool:
+    line_start = text.rfind("\n", 0, index) + 1
+    prefix = text[line_start:index].strip()
+    return re.fullmatch(r"(?:\d+(?:\.\d+)*|[A-Za-z])", prefix) is not None
+
+
 def _sentence_terminates(
     text: str,
     index: int,
     character: str,
     *,
     nested: bool,
+    in_url: bool,
     terminators: frozenset[str],
 ) -> bool:
     if character not in terminators or nested:
         return False
-    numbered_marker = character == "." and text[:index].strip().isdigit() and index < 6
+    numbered_marker = character == "." and _is_line_marker_period(text, index)
     decimal_point = (
         character == "."
         and index > 0
@@ -153,7 +161,7 @@ def _sentence_terminates(
         and text[index + 1].isdigit()
     )
     return character != "." or not (
-        _is_abbreviation(text, index) or numbered_marker or decimal_point
+        _is_abbreviation(text, index) or numbered_marker or decimal_point or in_url
     )
 
 
@@ -167,6 +175,12 @@ def _outer_sentence_ranges(
     depth = 0
     quote_open = False
     terminators = frozenset(_SENTENCE_END | ({":"} if colon_terminates else set()))
+    url_periods = {
+        index
+        for match in _URL_RE.finditer(text)
+        for index in range(match.start(), match.end())
+        if text[index] == "."
+    }
     for index, character in enumerate(text):
         if character == '"':
             quote_open = not quote_open
@@ -179,6 +193,7 @@ def _outer_sentence_ranges(
             index,
             character,
             nested=bool(depth or quote_open),
+            in_url=index in url_periods,
             terminators=terminators,
         ):
             continue

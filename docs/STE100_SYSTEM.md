@@ -182,7 +182,7 @@ Detector and rewriter data use one record with:
 
 Source kinds are `standard_example`, `technical_document`, `conversation_revision`, and `synthetic`. Annotation states are `weak`, `reviewed`, and `adjudicated`.
 
-Complete documents and conversations stay in one split. The validator also prevents a source ID, exact text, model family, or time bucket from crossing splits. Synthetic records must cite a reviewed standard example or an adjudicated `no_violation` or exception parent. Checker-clean text is not sufficient synthetic truth.
+Complete documents and conversations stay in one split. The validator also prevents a source ID, exact text, model family, or time bucket from crossing splits. Synthetic children stay in the same split as their parents. Self references and lineage cycles are invalid. Synthetic records must cite a reviewed clean standard example or an adjudicated `no_violation` or exception parent. Checker-clean text is not sufficient synthetic truth.
 
 Conversation outcomes are observed labels: `revision_requested`, `continued_without_revision`, `conversation_ended`, or `explicit_approval`. Silence is never converted to acceptance. Conversation revisions remain weak preference evidence until a reviewer assigns STE100 labels.
 

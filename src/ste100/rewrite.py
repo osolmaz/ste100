@@ -9,7 +9,7 @@ from typing import Literal
 from ste100.checker import analyze
 from ste100.contracts import Rewriter
 from ste100.models import AnalysisResult, ByteRange, FindingKind, ProjectDictionary
-from ste100.protection import ProtectedDocument, protect_text
+from ste100.protection import ProtectedContentError, ProtectedDocument, protect_text
 from ste100.standard import StandardPack
 
 
@@ -19,9 +19,10 @@ class RewriteOutcome:
     status: Literal["review_required", "rejected"]
     candidate: str | None
     source_analysis: AnalysisResult
-    candidate_analysis: AnalysisResult
+    candidate_analysis: AnalysisResult | None
     protected_document: ProtectedDocument
     deterministic_gate_passed: bool
+    rejection_reason: str | None = None
     official_compliance_claimed: bool = False
 
 
@@ -58,7 +59,19 @@ def rewrite_candidate(
     )
     hints = source_analysis.findings if use_detector_hints else ()
     masked_candidate = rewriter.rewrite(protected.masked_text, hints)
-    candidate = protected.restore(masked_candidate)
+    try:
+        candidate = protected.restore(masked_candidate)
+    except ProtectedContentError as error:
+        return RewriteOutcome(
+            model_id=rewriter.model_id,
+            status="rejected",
+            candidate=None,
+            source_analysis=source_analysis,
+            candidate_analysis=None,
+            protected_document=protected,
+            deterministic_gate_passed=False,
+            rejection_reason=str(error),
+        )
     candidate_analysis = analyze(
         candidate,
         standard=standard,
@@ -75,4 +88,5 @@ def rewrite_candidate(
         candidate_analysis=candidate_analysis,
         protected_document=protected,
         deterministic_gate_passed=gate_passed,
+        rejection_reason=None if gate_passed else "candidate introduced a deterministic violation",
     )
