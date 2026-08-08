@@ -43,11 +43,11 @@ Each dictionary entry contains:
 - approved or unapproved status
 - part of speech
 - listed forms
-- approved meaning text or alternatives where extractable
+- approved alternatives when the table column is unambiguous
 - source page, row ID, and source digest
 - reviewed state
 
-An entry key consists of status, headword, and parts of speech. Duplicate keys are invalid. A headword can have approved and unapproved uses when Issue 9 distinguishes meaning or part of speech. Without sufficient linguistic evidence, the checker sends that use to human review.
+An entry key consists of status, headword, and parts of speech. Duplicate keys are invalid. A headword can have approved and unapproved uses when Issue 9 distinguishes meaning or part of speech. Without sufficient linguistic evidence, the checker sends that use to human review. Approved meanings are not copied into the runtime pack because fixed-column text extraction can mix them with the example column; Rule 1.3 therefore stays in human review.
 
 ## Document model
 

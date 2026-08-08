@@ -99,6 +99,16 @@ def test_approved_word_in_unapproved_part_of_speech_fails(analyzer: SpacyAnalyze
     assert finding.kind is FindingKind.VIOLATION
 
 
+def test_omitted_that_requires_a_finite_subordinate_clause(
+    analyzer: SpacyAnalyzer,
+) -> None:
+    review = _rule_findings("Make sure the valve is open.", "GR-1", analyzer)
+    assert review and {item.kind for item in review} == {FindingKind.HUMAN_REVIEW}
+    assert _rule_findings("Make sure that the valve is open.", "GR-1", analyzer) == []
+    assert _rule_findings("Show the result.", "GR-1", analyzer) == []
+    assert _rule_findings("Show how to remove the cover.", "GR-1", analyzer) == []
+
+
 def test_spacy_rules_remain_human_review_when_analyzer_is_absent() -> None:
     result = analyze("1. Open the panel.")
     coverage = next(item for item in result.coverage if item.rule_id == "5.3")

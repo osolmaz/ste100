@@ -7,7 +7,7 @@
   },
   "file_digests": {
     "conformance.json": "sha256:900fd488c58d07e18d34204bd87481d6853eaf631afe4408424453187f99a23f",
-    "dictionary.json": "sha256:835447436056ce9870945e75797f7438636b5e23310984f9e0995c88c02f17d4",
+    "dictionary.json": "sha256:10eecfa67e800fb03bb2d09f588aa938c6a1e6cdbbf30ec9a6516cf633a8834c",
     "examples.json": "sha256:28b6d7f28232ecec779922764b7b820b8434417aad54d323aa3533625304da6c",
     "rules.json": "sha256:7471388df4b8bb08100a67544105975272b85b69ed62bbc9917e0b97d3a10e5e"
   },

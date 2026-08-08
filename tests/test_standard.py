@@ -126,14 +126,15 @@ def test_bundled_dictionary_has_unique_ids_and_status_pos_keys() -> None:
     assert len(keys) == len(dictionary)
     assert all(entry.word == entry.word.casefold() for entry in dictionary)
     assert all(entry.parts_of_speech for entry in dictionary)
+    assert all(not entry.approved_meanings for entry in dictionary if entry.status == "approved")
 
 
 def test_bundled_deterministic_examples_match_their_labels() -> None:
     examples = load_bundled_standard().examples
-    spacy_rules = {"5.5"}
+    separately_tested_rules = {"5.5", "GR-1", "GR-6", "GR-7"}
     for example in examples:
         rule_id = example.rule_ids[0]
-        if rule_id in spacy_rules:
+        if rule_id in separately_tested_rules:
             continue
         failed = {
             finding.rule_id
