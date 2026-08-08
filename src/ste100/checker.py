@@ -6,7 +6,6 @@ import hashlib
 import re
 from collections import defaultdict
 
-from ste100.contracts import Detector
 from ste100.document import (
     Block,
     BlockKind,
@@ -15,19 +14,20 @@ from ste100.document import (
     parse_document,
     slice_bytes,
 )
+from ste100.linguistics import LinguisticAnalyzer, LinguisticSentence, LinguisticToken
 from ste100.models import (
     AnalysisResult,
     ByteRange,
     CoverageStatus,
+    DictionaryEntry,
     Finding,
     FindingKind,
     ProjectDictionary,
     RuleCoverage,
-    RuleTreatment,
 )
-from ste100.rule_ids import ISSUE9_RULE_ID_SET, ISSUE9_RULE_IDS
-from ste100.standard import StandardPack
-from ste100.terminology import TermMatcher, validate_project_dictionary
+from ste100.rule_ids import ISSUE9_RULE_IDS
+from ste100.standard import StandardPack, load_bundled_standard
+from ste100.terminology import TermMatch, TermMatcher, validate_project_dictionary
 
 _APOSTROPHE = "['\u2019]"
 _CONTRACTION_RE = re.compile(
@@ -40,19 +40,54 @@ _LEXICAL_RE = re.compile(r"^[A-Za-z]+(?:'[A-Za-z]+)?$")
 _GROUPED_ELEMENT_RE = re.compile(
     r"\b(?:[A-Z][a-z]+|[A-Z]{2,})(?:\s+(?:[A-Z][a-z]+|[A-Z]{2,})){1,}\b"
 )
-_CHECKER_BY_RULE = {
-    "1.1": "vocabulary",
-    "4.2": "contraction",
-    "5.1": "procedure_sentence_length",
-    "6.3": "descriptive_sentence_length",
-    "6.6": "paragraph_sentence_count",
-    "8.1": "semicolon",
-    "8.4": "word_count",
-    "8.5": "word_count",
-    "8.6": "word_count",
-    "8.7": "word_count",
+_AMERICAN_SPELLINGS = {
+    "aeroplane": "airplane",
+    "aluminium": "aluminum",
+    "analogue": "analog",
+    "behaviour": "behavior",
+    "centre": "center",
+    "colour": "color",
+    "defence": "defense",
+    "fibre": "fiber",
+    "fuelled": "fueled",
+    "grey": "gray",
+    "labour": "labor",
+    "litre": "liter",
+    "metre": "meter",
+    "mould": "mold",
+    "organisation": "organization",
+    "programme": "program",
+    "recognise": "recognize",
+    "theatre": "theater",
+    "tyre": "tire",
 }
-_FULL_RULES = frozenset({"6.6", "8.1", "8.4", "8.5", "8.7"})
+_LATIN_ABBREVIATION_RE = re.compile(r"(?<!\w)(?:e\.g\.|i\.e\.|etc\.|et al\.)(?!\w)", re.I)
+_GENDERED_RE = re.compile(
+    r"\b(?:he|she|him|her|his|hers|himself|herself|manpower|man-hours?|mankind)\b",
+    re.IGNORECASE,
+)
+_OMITTED_THAT_RE = re.compile(
+    r"\b(?:make\s+sure|recommend(?:s|ed)?|show(?:s|ed)?)\s+(?!that\b)", re.IGNORECASE
+)
+_LIST_WITHOUT_COLON_RE = re.compile(
+    r"(?m)^(?!\s*(?:[-*•]|[a-z][.)]|\d+(?:\.\d+)*[.)])\s)"
+    r"(?P<intro>[^\n:]+[.!?])\s*\n\s*(?:[-*•]|[a-z][.)]|\d+(?:\.\d+)*[.)])\s+",
+    re.IGNORECASE,
+)
+_SPACY_POS = {
+    "NOUN": "noun",
+    "PROPN": "noun",
+    "VERB": "verb",
+    "AUX": "verb",
+    "ADJ": "adjective",
+    "ADV": "adverb",
+    "ADP": "preposition",
+    "PRON": "pronoun",
+    "DET": "article",
+    "CCONJ": "conjunction",
+    "SCONJ": "conjunction",
+}
+_ALWAYS_APPLICABLE = frozenset({"1.1", "1.14", "4.2", "8.1", "8.3", "9.3", "GR-1", "GR-6", "GR-7"})
 
 
 def _finding_id(rule_id: str, checker_id: str, byte_range: ByteRange | None, message: str) -> str:
@@ -69,20 +104,15 @@ def _finding(
     kind: FindingKind,
     message: str,
     byte_range: ByteRange | None,
-    model_id: str | None = None,
-    score: float | None = None,
 ) -> Finding:
-    excerpt = slice_bytes(text, byte_range) if byte_range is not None else None
     return Finding(
         finding_id=_finding_id(rule_id, checker_id, byte_range, message),
         rule_id=rule_id,
         kind=kind,
         message=message,
         byte_range=byte_range,
-        excerpt=excerpt,
-        checker_id=None if model_id is not None else checker_id,
-        model_id=model_id,
-        score=score,
+        excerpt=slice_bytes(text, byte_range) if byte_range is not None else None,
+        checker_id=checker_id,
     )
 
 
@@ -108,47 +138,167 @@ def _regex_findings(
     ]
 
 
-def _term_ranges(text: str, project: ProjectDictionary | None) -> tuple[ByteRange, ...]:
-    if project is None:
-        return ()
-    return tuple(match.byte_range for match in TermMatcher(project).find(text))
+def _spelling_findings(text: str) -> list[Finding]:
+    pattern = re.compile(
+        rf"\b(?:{'|'.join(re.escape(word) for word in _AMERICAN_SPELLINGS)})\b", re.IGNORECASE
+    )
+    offsets = char_to_byte_offsets(text)
+    findings: list[Finding] = []
+    for match in pattern.finditer(text):
+        replacement = _AMERICAN_SPELLINGS[match.group().casefold()]
+        findings.append(
+            _finding(
+                text,
+                rule_id="1.14",
+                checker_id="american_spelling",
+                kind=FindingKind.VIOLATION,
+                message=f"Use American spelling {replacement!r} instead of {match.group()!r}.",
+                byte_range=ByteRange(start=offsets[match.start()], end=offsets[match.end()]),
+            )
+        )
+    return findings
+
+
+def _parenthesis_findings(text: str) -> list[Finding]:
+    offsets = char_to_byte_offsets(text)
+    stack: list[int] = []
+    findings: list[Finding] = []
+    for index, character in enumerate(text):
+        if character == "(":
+            stack.append(index)
+        elif character == ")":
+            if stack:
+                stack.pop()
+            else:
+                findings.append(
+                    _finding(
+                        text,
+                        rule_id="8.3",
+                        checker_id="balanced_parentheses",
+                        kind=FindingKind.VIOLATION,
+                        message="Closing parenthesis has no matching opening parenthesis.",
+                        byte_range=ByteRange(start=offsets[index], end=offsets[index + 1]),
+                    )
+                )
+    for index in stack:
+        findings.append(
+            _finding(
+                text,
+                rule_id="8.3",
+                checker_id="balanced_parentheses",
+                kind=FindingKind.VIOLATION,
+                message="Opening parenthesis has no matching closing parenthesis.",
+                byte_range=ByteRange(start=offsets[index], end=offsets[index + 1]),
+            )
+        )
+    return findings
+
+
+def _project_matches(text: str, project: ProjectDictionary | None) -> tuple[TermMatch, ...]:
+    return () if project is None else TermMatcher(project).find(text)
 
 
 def _overlaps(byte_range: ByteRange, ranges: tuple[ByteRange, ...]) -> bool:
     return any(byte_range.start < item.end and item.start < byte_range.end for item in ranges)
 
 
+def _dictionary_phrase_findings(
+    text: str,
+    standard: StandardPack,
+    project_ranges: tuple[ByteRange, ...],
+) -> tuple[list[Finding], tuple[ByteRange, ...]]:
+    phrases = sorted(
+        {
+            entry.word: entry
+            for entry in standard.dictionary
+            if entry.status == "unapproved" and " " in entry.word
+        }.items(),
+        key=lambda item: (-len(item[0]), item[0]),
+    )
+    if not phrases:
+        return [], ()
+    offsets = char_to_byte_offsets(text)
+    occupied: list[ByteRange] = []
+    findings: list[Finding] = []
+    for phrase, entry in phrases:
+        pattern = re.compile(rf"(?<![\w-]){re.escape(phrase)}(?![\w-])", re.IGNORECASE)
+        for match in pattern.finditer(text):
+            byte_range = ByteRange(start=offsets[match.start()], end=offsets[match.end()])
+            if _overlaps(byte_range, (*project_ranges, *occupied)):
+                continue
+            occupied.append(byte_range)
+            findings.extend(_unapproved_findings(text, match.group(), byte_range, (entry,)))
+            if "verb" in entry.parts_of_speech:
+                findings.append(
+                    _finding(
+                        text,
+                        rule_id="9.3",
+                        checker_id="phrasal_verb",
+                        kind=FindingKind.VIOLATION,
+                        message=f"Do not use phrasal verb {match.group()!r}.",
+                        byte_range=byte_range,
+                    )
+                )
+    return findings, tuple(occupied)
+
+
+def _unapproved_findings(
+    text: str,
+    token: str,
+    byte_range: ByteRange,
+    entries: tuple[DictionaryEntry, ...],
+) -> list[Finding]:
+    alternatives = sorted({alternative for entry in entries for alternative in entry.alternatives})
+    suffix = f" Use: {', '.join(alternatives)}." if alternatives else ""
+    message = f"{token!r} is unapproved.{suffix}"
+    return [
+        _finding(
+            text,
+            rule_id=rule_id,
+            checker_id="vocabulary" if rule_id == "1.1" else "unapproved_vocabulary",
+            kind=FindingKind.VIOLATION,
+            message=message,
+            byte_range=byte_range,
+        )
+        for rule_id in ("1.1", "1.6")
+    ]
+
+
 def _vocabulary_findings(
     document: Document,
-    standard: StandardPack | None,
+    standard: StandardPack,
     project: ProjectDictionary | None,
 ) -> list[Finding]:
-    if standard is None:
-        return []
-    project_ranges = _term_ranges(document.text, project)
+    project_ranges = tuple(match.byte_range for match in _project_matches(document.text, project))
+    findings, phrase_ranges = _dictionary_phrase_findings(document.text, standard, project_ranges)
     index = standard.dictionary_by_word
-    findings: list[Finding] = []
     for sentence in document.sentences:
         for token in sentence.tokens:
-            if not _LEXICAL_RE.fullmatch(token.text) or _overlaps(token.byte_range, project_ranges):
+            if (
+                not _LEXICAL_RE.fullmatch(token.text)
+                or _overlaps(token.byte_range, project_ranges)
+                or _overlaps(token.byte_range, phrase_ranges)
+            ):
                 continue
             entries = index.get(token.text.casefold(), ())
-            if any(entry.status == "approved" for entry in entries):
-                continue
-            if entries:
-                alternatives = sorted(
-                    {alternative for entry in entries for alternative in entry.alternatives}
-                )
-                suffix = f" Use: {', '.join(alternatives)}." if alternatives else ""
+            approved = tuple(entry for entry in entries if entry.status == "approved")
+            unapproved = tuple(entry for entry in entries if entry.status == "unapproved")
+            if approved and unapproved:
                 findings.append(
                     _finding(
                         document.text,
                         rule_id="1.1",
                         checker_id="vocabulary",
-                        kind=FindingKind.VIOLATION,
-                        message=f"{token.text!r} is unapproved.{suffix}",
+                        kind=FindingKind.HUMAN_REVIEW,
+                        message=f"Review the part of speech and meaning of {token.text!r}.",
                         byte_range=token.byte_range,
                     )
+                )
+            elif approved:
+                continue
+            elif unapproved:
+                findings.extend(
+                    _unapproved_findings(document.text, token.text, token.byte_range, unapproved)
                 )
             else:
                 findings.append(
@@ -194,27 +344,37 @@ def _sentence_limit_findings(
     return findings
 
 
-def _paragraph_count_findings(document: Document, block: Block) -> list[Finding]:
-    if len(block.sentences) <= 6:
-        return []
-    return [
-        _finding(
-            document.text,
-            rule_id="6.6",
-            checker_id="paragraph_sentence_count",
-            kind=FindingKind.VIOLATION,
-            message=f"Paragraph has {len(block.sentences)} sentences; the maximum is 6.",
-            byte_range=block.byte_range,
-        )
-    ]
-
-
-def _length_findings(document: Document) -> tuple[list[Finding], set[str]]:
+def _condition_comma_findings(document: Document, block: Block) -> list[Finding]:
     findings: list[Finding] = []
-    applicable: set[str] = set()
+    for sentence in block.sentences:
+        if not re.match(
+            r"^\s*(?:\d+(?:\.\d+)*[.)]\s*)?(?:if|when|before|after|while|unless)\b",
+            sentence.text,
+            re.IGNORECASE,
+        ):
+            continue
+        first_command = sentence.text.find(",")
+        if first_command >= 0:
+            continue
+        findings.append(
+            _finding(
+                document.text,
+                rule_id="5.4",
+                checker_id="condition_comma",
+                kind=FindingKind.VIOLATION,
+                message="Separate the initial condition from the command with a comma.",
+                byte_range=sentence.byte_range,
+            )
+        )
+    return findings
+
+
+def _structure_findings(document: Document) -> tuple[list[Finding], set[str]]:  # noqa: C901 -- Explicit block-kind dispatch.
+    findings: list[Finding] = []
+    applicable: set[str] = set(_ALWAYS_APPLICABLE if document.text.strip() else ())
     for block in document.blocks:
         if block.kind in {BlockKind.PROCEDURE, BlockKind.WARNING, BlockKind.CAUTION}:
-            applicable.add("5.1")
+            applicable.update(("5.1", "5.2", "5.3", "5.4", "7.1", "7.2"))
             findings.extend(
                 _sentence_limit_findings(
                     document,
@@ -225,6 +385,7 @@ def _length_findings(document: Document) -> tuple[list[Finding], set[str]]:
                     maximum=20,
                 )
             )
+            findings.extend(_condition_comma_findings(document, block))
         if block.kind in {BlockKind.PARAGRAPH, BlockKind.NOTE}:
             applicable.add("6.3")
             findings.extend(
@@ -239,120 +400,339 @@ def _length_findings(document: Document) -> tuple[list[Finding], set[str]]:
             )
         if block.kind is BlockKind.PARAGRAPH:
             applicable.add("6.6")
-            findings.extend(_paragraph_count_findings(document, block))
+            if len(block.sentences) > 6:
+                findings.append(
+                    _finding(
+                        document.text,
+                        rule_id="6.6",
+                        checker_id="paragraph_sentence_count",
+                        kind=FindingKind.VIOLATION,
+                        message=f"Paragraph has {len(block.sentences)} sentences; maximum 6.",
+                        byte_range=block.byte_range,
+                    )
+                )
+        if block.kind is BlockKind.NOTE:
+            applicable.add("5.5")
+        if block.kind is BlockKind.LIST:
+            applicable.update(("4.3", "8.4"))
     if document.sentences:
-        applicable.update(("8.4", "8.5", "8.6", "8.7"))
+        applicable.update(("8.5", "8.6", "8.7"))
     return findings, applicable
 
 
-def _learned_findings(text: str, detector: Detector | None) -> list[Finding]:
-    if detector is None:
-        return []
+def _list_findings(text: str) -> list[Finding]:
+    offsets = char_to_byte_offsets(text)
+    return [
+        _finding(
+            text,
+            rule_id="4.3",
+            checker_id="vertical_list",
+            kind=FindingKind.VIOLATION,
+            message="Use a colon before a vertical list.",
+            byte_range=ByteRange(
+                start=offsets[match.start("intro")], end=offsets[match.end("intro")]
+            ),
+        )
+        for match in _LIST_WITHOUT_COLON_RE.finditer(text)
+    ]
+
+
+def _block_for_token(document: Document, token: LinguisticToken) -> Block | None:
+    return next(
+        (
+            block
+            for block in document.blocks
+            if block.byte_range.start <= token.byte_range.start < block.byte_range.end
+        ),
+        None,
+    )
+
+
+def _is_imperative(sentence: LinguisticSentence) -> bool:
+    roots = [
+        token for token in sentence.tokens if token.dependency == "ROOT" and token.pos == "VERB"
+    ]
+    if len(roots) != 1 or roots[0].pos != "VERB" or roots[0].tag != "VB":
+        return False
+    return not any(token.dependency in {"nsubj", "nsubjpass"} for token in sentence.tokens)
+
+
+def _linguistic_findings(
+    document: Document,
+    standard: StandardPack,
+    project: ProjectDictionary | None,
+    analyzer: LinguisticAnalyzer | None,
+) -> tuple[list[Finding], set[str]]:
+    if analyzer is None:
+        return [], set()
+    applicable = {
+        "1.2",
+        "1.4",
+        "1.7",
+        "1.13",
+        "3.1",
+        "3.2",
+        "3.4",
+        "3.5",
+        "3.6",
+        "5.2",
+        "5.3",
+        "5.5",
+        "7.2",
+    }
     findings: list[Finding] = []
-    text_bytes = len(text.encode("utf-8"))
-    for prediction in detector.detect(text):
-        if prediction.rule_id not in ISSUE9_RULE_ID_SET:
-            raise ValueError(f"detector returned unknown rule ID: {prediction.rule_id}")
-        if prediction.score < 0 or prediction.score > 1:
-            raise ValueError("detector score must be between 0 and 1")
-        if prediction.byte_range is not None and prediction.byte_range.end > text_bytes:
-            raise ValueError("detector byte range is outside the source text")
+    project_matches = _project_matches(document.text, project)
+    project_ranges = tuple(match.byte_range for match in project_matches)
+    index = standard.dictionary_by_word
+    for sentence in analyzer.analyze(document.text):
+        imperative = _is_imperative(sentence)
+        sentence_block = _block_for_token(document, sentence.tokens[0]) if sentence.tokens else None
+        if (
+            sentence_block is not None
+            and sentence_block.kind is BlockKind.PROCEDURE
+            and not imperative
+        ):
+            findings.append(
+                _finding(
+                    document.text,
+                    rule_id="5.3",
+                    checker_id="imperative_instruction",
+                    kind=FindingKind.VIOLATION,
+                    message="Write the procedure step in the imperative form.",
+                    byte_range=sentence.byte_range,
+                )
+            )
+        if sentence_block is not None and sentence_block.kind is BlockKind.NOTE and imperative:
+            findings.append(
+                _finding(
+                    document.text,
+                    rule_id="5.5",
+                    checker_id="note_instruction",
+                    kind=FindingKind.VIOLATION,
+                    message="Use notes for information, not instructions.",
+                    byte_range=sentence.byte_range,
+                )
+            )
+        if (
+            sentence_block is not None
+            and sentence_block.kind in {BlockKind.WARNING, BlockKind.CAUTION}
+            and not imperative
+            and not re.match(
+                r"^\s*(?:WARNING|CAUTION):\s*(?:if|when|before|after)\b",
+                sentence.text,
+                re.IGNORECASE,
+            )
+        ):
+            findings.append(
+                _finding(
+                    document.text,
+                    rule_id="7.2",
+                    checker_id="safety_opening",
+                    kind=FindingKind.HUMAN_REVIEW,
+                    message="Start the safety instruction with a clear command or condition.",
+                    byte_range=sentence.byte_range,
+                )
+            )
+        verb_actions = [
+            token
+            for token in sentence.tokens
+            if token.pos == "VERB" and token.dependency in {"ROOT", "conj"}
+        ]
+        if (
+            sentence_block is not None
+            and sentence_block.kind is BlockKind.PROCEDURE
+            and len(verb_actions) > 1
+        ):
+            findings.append(
+                _finding(
+                    document.text,
+                    rule_id="5.2",
+                    checker_id="instruction_count",
+                    kind=FindingKind.HUMAN_REVIEW,
+                    message="Review whether the procedure sentence contains simultaneous actions.",
+                    byte_range=sentence.byte_range,
+                )
+            )
+        for token in sentence.tokens:
+            findings.extend(
+                _token_linguistic_findings(
+                    document,
+                    token,
+                    sentence_block,
+                    index,
+                    project,
+                    project_matches,
+                    project_ranges,
+                )
+            )
+    return findings, applicable
+
+
+def _token_linguistic_findings(  # noqa: C901 -- Independent linguistic clauses.
+    document: Document,
+    token: LinguisticToken,
+    block: Block | None,
+    index: dict[str, tuple[DictionaryEntry, ...]],
+    project: ProjectDictionary | None,
+    project_matches: tuple[TermMatch, ...],
+    project_ranges: tuple[ByteRange, ...],
+) -> list[Finding]:
+    findings: list[Finding] = []
+    actual_pos = _SPACY_POS.get(token.pos)
+    entries = index.get(token.text.casefold(), ())
+    approved = tuple(entry for entry in entries if entry.status == "approved")
+    if (
+        actual_pos is not None
+        and approved
+        and not any(actual_pos in entry.parts_of_speech for entry in approved)
+    ):
         findings.append(
             _finding(
-                text,
-                rule_id=prediction.rule_id,
-                checker_id="learned_detector",
-                kind=FindingKind.PROBABLE_VIOLATION,
-                message=prediction.message,
-                byte_range=prediction.byte_range,
-                model_id=detector.model_id,
-                score=prediction.score,
+                document.text,
+                rule_id="1.2",
+                checker_id="approved_part_of_speech",
+                kind=FindingKind.VIOLATION,
+                message=f"{token.text!r} is not approved as a {actual_pos}.",
+                byte_range=token.byte_range,
             )
         )
-    return findings
-
-
-def _finding_coverage(
-    findings: list[Finding],
-) -> tuple[CoverageStatus, str | None] | None:
-    if any(item.kind is FindingKind.VIOLATION for item in findings):
-        return CoverageStatus.FAILED, None
-    if any(item.kind is FindingKind.PROBABLE_VIOLATION for item in findings):
-        return (
-            CoverageStatus.PROBABLE_VIOLATION,
-            "A learned finding is report-only and does not establish nonconformance.",
-        )
-    if any(item.kind is FindingKind.HUMAN_REVIEW for item in findings):
-        return (
-            CoverageStatus.HUMAN_REVIEW,
-            "The deterministic evidence is insufficient for a conclusive result.",
-        )
-    return None
-
-
-def _empty_coverage(
-    rule_id: str,
-    treatment: RuleTreatment,
-    applicable: set[str],
-    detector: Detector | None,
-) -> tuple[CoverageStatus, str | None]:
-    if rule_id in _FULL_RULES and rule_id in applicable:
-        return CoverageStatus.PASSED, None
-    if rule_id in _FULL_RULES:
-        return CoverageStatus.NOT_APPLICABLE, "No applicable structure was found."
-    if rule_id in _CHECKER_BY_RULE:
-        return (
-            CoverageStatus.NOT_CHECKED,
-            "Only a conclusive subset of this requirement is implemented.",
-        )
-    if treatment is RuleTreatment.HUMAN_REVIEW:
-        return CoverageStatus.HUMAN_REVIEW, "This requirement needs human review."
-    reason = (
-        "No learned detector was supplied."
-        if detector is None
-        else "The detector produced no finding; absence is not a pass."
+    lemma_entries = tuple(
+        entry
+        for entry in index.get(token.lemma, ())
+        if entry.status == "approved" and actual_pos in entry.parts_of_speech
     )
-    return CoverageStatus.NOT_CHECKED, reason
+    if token.pos in {"VERB", "ADJ"} and lemma_entries:
+        allowed = {
+            value.casefold()
+            for entry in lemma_entries
+            for value in (entry.word, *entry.approved_forms)
+        }
+        if token.text.casefold() not in allowed:
+            rule_id = "3.1" if token.pos == "VERB" else "1.4"
+            findings.append(
+                _finding(
+                    document.text,
+                    rule_id=rule_id,
+                    checker_id="approved_form",
+                    kind=FindingKind.VIOLATION,
+                    message=f"{token.text!r} is not a listed approved form of {token.lemma!r}.",
+                    byte_range=token.byte_range,
+                )
+            )
+    if token.tag == "VBG" and not _overlaps(token.byte_range, project_ranges):
+        for rule_id, checker_id in (("3.2", "verb_form"), ("3.5", "ing_form")):
+            findings.append(
+                _finding(
+                    document.text,
+                    rule_id=rule_id,
+                    checker_id=checker_id,
+                    kind=FindingKind.HUMAN_REVIEW,
+                    message=(
+                        "Review whether this -ing form is an approved technical noun or modifier."
+                    ),
+                    byte_range=token.byte_range,
+                )
+            )
+    if token.dependency in {"auxpass", "nsubjpass"}:
+        kind = (
+            FindingKind.VIOLATION
+            if block is not None and block.kind is BlockKind.PROCEDURE
+            else FindingKind.HUMAN_REVIEW
+        )
+        findings.append(
+            _finding(
+                document.text,
+                rule_id="3.6",
+                checker_id="passive_voice",
+                kind=kind,
+                message="Review passive voice; procedures must use active voice.",
+                byte_range=token.byte_range,
+            )
+        )
+    if token.tag in {"VBG", "VBN"} and token.dependency in {"xcomp", "ccomp"}:
+        findings.append(
+            _finding(
+                document.text,
+                rule_id="3.4",
+                checker_id="complex_verb",
+                kind=FindingKind.HUMAN_REVIEW,
+                message="Review this possible complex verb construction.",
+                byte_range=token.byte_range,
+            )
+        )
+    if project is not None:
+        owner = next(
+            (
+                match.term
+                for match in project_matches
+                if _overlaps(token.byte_range, (match.byte_range,))
+            ),
+            None,
+        )
+        if owner is not None and owner.category == "technical_noun" and token.pos == "VERB":
+            findings.append(
+                _finding(
+                    document.text,
+                    rule_id="1.7",
+                    checker_id="technical_noun_as_verb",
+                    kind=FindingKind.VIOLATION,
+                    message=f"Do not use technical noun {owner.term!r} as a verb.",
+                    byte_range=token.byte_range,
+                )
+            )
+        if owner is not None and owner.category == "technical_verb" and token.pos == "NOUN":
+            findings.append(
+                _finding(
+                    document.text,
+                    rule_id="1.13",
+                    checker_id="technical_verb_as_noun",
+                    kind=FindingKind.VIOLATION,
+                    message=f"Do not use technical verb {owner.term!r} as a noun.",
+                    byte_range=token.byte_range,
+                )
+            )
+    return findings
 
 
 def _coverage(
     findings: tuple[Finding, ...],
     *,
     applicable: set[str],
-    standard: StandardPack | None,
-    detector: Detector | None,
+    standard: StandardPack,
 ) -> tuple[RuleCoverage, ...]:
     by_rule: dict[str, list[Finding]] = defaultdict(list)
     for finding in findings:
         by_rule[finding.rule_id].append(finding)
-    treatments = (
-        {rule.rule_id: rule.treatment for rule in standard.rules}
-        if standard is not None
-        else {
-            rule_id: (
-                RuleTreatment.DETERMINISTIC
-                if rule_id in _CHECKER_BY_RULE
-                else RuleTreatment.LEARNED
-            )
-            for rule_id in ISSUE9_RULE_IDS
-        }
-    )
+    matrix = {item.rule_id: item for item in standard.conformance}
+    treatments = {item.rule_id: item.treatment for item in standard.rules}
     records: list[RuleCoverage] = []
     for rule_id in ISSUE9_RULE_IDS:
         rule_findings = by_rule.get(rule_id, [])
-        treatment = treatments.get(rule_id, RuleTreatment.NOT_CHECKED)
         ids = tuple(item.finding_id for item in rule_findings)
-        resolution = _finding_coverage(rule_findings) or _empty_coverage(
-            rule_id,
-            treatment,
-            applicable,
-            detector,
-        )
-        status, reason = resolution
+        if any(item.kind is FindingKind.VIOLATION for item in rule_findings):
+            status = CoverageStatus.FAILED
+            reason = None
+        elif rule_findings:
+            status = CoverageStatus.HUMAN_REVIEW
+            reason = "The deterministic evidence is not conclusive."
+        else:
+            conformance = matrix[rule_id]
+            if conformance.coverage_scope == "none":
+                status = CoverageStatus.HUMAN_REVIEW
+                reason = conformance.reason
+            elif rule_id not in applicable:
+                status = CoverageStatus.NOT_APPLICABLE
+                reason = "No applicable structure was found."
+            elif conformance.coverage_scope == "full":
+                status = CoverageStatus.PASSED
+                reason = None
+            else:
+                status = CoverageStatus.HUMAN_REVIEW
+                reason = conformance.reason
         records.append(
             RuleCoverage(
                 rule_id=rule_id,
-                treatment=treatment,
+                treatment=treatments[rule_id],
                 status=status,
                 finding_ids=ids,
                 reason=reason,
@@ -366,10 +746,11 @@ def analyze(
     *,
     standard: StandardPack | None = None,
     project_dictionary: ProjectDictionary | None = None,
-    detector: Detector | None = None,
+    linguistic_analyzer: LinguisticAnalyzer | None = None,
 ) -> AnalysisResult:
-    """Analyze text without making an official STE compliance claim."""
+    """Analyze text without making an official compliance claim."""
 
+    standard = standard or load_bundled_standard()
     if project_dictionary is not None:
         report = validate_project_dictionary(project_dictionary, standard=standard)
         if not report.valid:
@@ -395,10 +776,46 @@ def analyze(
             message="Do not use a contraction.",
         )
     )
+    findings.extend(_spelling_findings(text))
+    findings.extend(
+        _regex_findings(
+            text,
+            _LATIN_ABBREVIATION_RE,
+            rule_id="GR-6",
+            checker_id="latin_abbreviation",
+            message="Write the expression in full instead of a Latin abbreviation.",
+        )
+    )
+    findings.extend(
+        _regex_findings(
+            text,
+            _GENDERED_RE,
+            rule_id="GR-7",
+            checker_id="gendered_term",
+            message="Use neutral and inclusive wording.",
+        )
+    )
+    findings.extend(
+        _regex_findings(
+            text,
+            _OMITTED_THAT_RE,
+            rule_id="GR-1",
+            checker_id="omitted_that",
+            message="Use 'that' after this expression when it introduces a clause.",
+        )
+    )
+    findings.extend(_parenthesis_findings(text))
+    findings.extend(_list_findings(text))
     findings.extend(_vocabulary_findings(document, standard, project_dictionary))
-    length_findings, applicable = _length_findings(document)
-    findings.extend(length_findings)
-    findings.extend(_learned_findings(text, detector))
+    structure_findings, applicable = _structure_findings(document)
+    findings.extend(structure_findings)
+    linguistic_findings, linguistic_applicable = _linguistic_findings(
+        document, standard, project_dictionary, linguistic_analyzer
+    )
+    findings.extend(linguistic_findings)
+    applicable.update(linguistic_applicable)
+    if project_dictionary is not None:
+        applicable.update(("1.8", "1.11", "2.1", "9.4"))
     ordered = tuple(
         sorted(
             findings,
@@ -409,15 +826,10 @@ def analyze(
             ),
         )
     )
-    applicable.add("8.1")
     return AnalysisResult(
         standard_id="ASD-STE100",
-        standard_issue=standard.manifest.issue if standard is not None else 9,
+        standard_issue=9,
+        standard_digest=standard.manifest.source.source_digest,
         findings=ordered,
-        coverage=_coverage(
-            ordered,
-            applicable=applicable,
-            standard=standard,
-            detector=detector,
-        ),
+        coverage=_coverage(ordered, applicable=applicable, standard=standard),
     )

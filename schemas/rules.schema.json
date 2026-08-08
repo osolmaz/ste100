@@ -56,9 +56,7 @@
     "RuleTreatment": {
       "enum": [
         "deterministic",
-        "learned",
-        "human_review",
-        "not_checked"
+        "human_review"
       ],
       "title": "RuleTreatment",
       "type": "string"
@@ -123,6 +121,7 @@
           "type": "string"
         },
         "source_file": {
+          "minLength": 1,
           "title": "Source File",
           "type": "string"
         }

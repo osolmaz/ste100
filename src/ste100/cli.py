@@ -7,17 +7,17 @@ import json
 import sys
 from pathlib import Path
 
-from pydantic import TypeAdapter, ValidationError
+from pydantic import ValidationError
 
-from ste100.catalog import load_conformance_catalog
 from ste100.checker import analyze
-from ste100.dataset import validate_dataset
-from ste100.extract import write_draft_extraction
-from ste100.models import DatasetRecord, FindingKind
+from ste100.curate import write_runtime_pack
+from ste100.linguistics import SpacyAnalyzer
+from ste100.models import FindingKind
 from ste100.standard import (
     StandardPack,
     StandardValidationError,
     ValidationReport,
+    load_bundled_standard,
     load_standard_pack,
     validate_standard_pack,
 )
@@ -43,9 +43,9 @@ def _report_payload(report: ValidationReport) -> dict[str, object]:
     }
 
 
-def _load_pack(path: str | None) -> StandardPack | None:
+def _load_pack(path: str | None) -> StandardPack:
     if path is None:
-        return None
+        return load_bundled_standard()
     return load_standard_pack(Path(path))
 
 
@@ -56,8 +56,8 @@ def _validate_standard(args: argparse.Namespace) -> int:
 
 
 def _extract_standard(args: argparse.Namespace) -> int:
-    audit = write_draft_extraction(Path(args.source), Path(args.output))
-    _json(audit)
+    manifest = write_runtime_pack(Path(args.source), Path(args.output))
+    _json(manifest.model_dump(mode="json"))
     return 0
 
 
@@ -69,14 +69,19 @@ def _analyze(args: argparse.Namespace) -> int:
         if project is None or not report.valid:
             _json(_report_payload(report))
             return 2
-        if standard is not None:
-            report = validate_project_dictionary(project, standard=standard)
-            if not report.valid:
-                _json(_report_payload(report))
-                return 2
+        report = validate_project_dictionary(project, standard=standard)
+        if not report.valid:
+            _json(_report_payload(report))
+            return 2
     path = Path(args.file)
     text = sys.stdin.read() if str(path) == "-" else path.read_text(encoding="utf-8")
-    result = analyze(text, standard=standard, project_dictionary=project)
+    analyzer = SpacyAnalyzer(args.spacy_model) if args.spacy else None
+    result = analyze(
+        text,
+        standard=standard,
+        project_dictionary=project,
+        linguistic_analyzer=analyzer,
+    )
     if args.format == "json":
         _json(result.model_dump(mode="json"))
     else:
@@ -95,64 +100,27 @@ def _analyze(args: argparse.Namespace) -> int:
 
 def _validate_project(args: argparse.Namespace) -> int:
     project, report = parse_project_dictionary(Path(args.file))
-    if project is not None and report.valid and args.standard_pack is not None:
-        standard = load_standard_pack(Path(args.standard_pack))
-        report = validate_project_dictionary(project, standard=standard)
+    if project is not None and report.valid:
+        report = validate_project_dictionary(project, standard=_load_pack(args.standard_pack))
     _json(_report_payload(report))
     return 0 if report.valid else 1
 
 
 def _explain(args: argparse.Namespace) -> int:
-    if args.standard_pack is not None:
-        standard = load_standard_pack(Path(args.standard_pack))
-        rule = standard.rules_by_id.get(args.rule)
-        matrix = {item.rule_id: item for item in standard.conformance}
-        rule_payload = rule.model_dump(mode="json") if rule is not None else None
-    else:
-        matrix = {item.rule_id: item for item in load_conformance_catalog()}
-        rule_payload = {
-            "rule_id": args.rule,
-            "requirement": None,
-            "review_state": "reviewed_standard_pack_required",
-        }
-    conformance = matrix.get(args.rule)
-    if rule_payload is None or conformance is None:
+    standard = _load_pack(args.standard_pack)
+    rule = standard.rules_by_id.get(args.rule)
+    conformance = {item.rule_id: item for item in standard.conformance}.get(args.rule)
+    if rule is None or conformance is None:
         print(f"Unknown rule: {args.rule}", file=sys.stderr)
         return 1
     _json(
         {
-            "rule": rule_payload,
+            "rule": rule.model_dump(mode="json"),
             "conformance": conformance.model_dump(mode="json"),
             "official_compliance_claimed": False,
         }
     )
     return 0
-
-
-def _read_dataset(path: Path) -> tuple[DatasetRecord, ...]:
-    text = path.read_text(encoding="utf-8")
-    adapter = TypeAdapter(tuple[DatasetRecord, ...])
-    if path.suffix == ".jsonl":
-        value = [json.loads(line) for line in text.splitlines() if line.strip()]
-    else:
-        value = json.loads(text)
-    return adapter.validate_python(value)
-
-
-def _validate_dataset(args: argparse.Namespace) -> int:
-    try:
-        records = _read_dataset(Path(args.file))
-    except (OSError, ValueError, ValidationError, json.JSONDecodeError) as error:
-        _json(
-            {
-                "valid": False,
-                "issues": [{"code": "invalid_dataset", "message": str(error), "path": args.file}],
-            }
-        )
-        return 1
-    report = validate_dataset(records)
-    _json(_report_payload(report))
-    return 0 if report.valid else 1
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -168,7 +136,7 @@ def _parser() -> argparse.ArgumentParser:
     validate.add_argument("--allow-draft", action="store_true")
     validate.set_defaults(handler=_validate_standard)
 
-    extract = commands.add_parser("extract-standard", help="create review-required Issue 9 drafts")
+    extract = commands.add_parser("extract-standard", help="build a source-traceable Issue 9 pack")
     extract.add_argument("source")
     extract.add_argument("output")
     extract.set_defaults(handler=_extract_standard)
@@ -177,6 +145,8 @@ def _parser() -> argparse.ArgumentParser:
     analyze_parser.add_argument("file")
     analyze_parser.add_argument("--standard-pack")
     analyze_parser.add_argument("--project-dictionary")
+    analyze_parser.add_argument("--spacy", action="store_true")
+    analyze_parser.add_argument("--spacy-model", default="en_core_web_sm")
     analyze_parser.add_argument("--format", choices=("text", "json"), default="text")
     analyze_parser.set_defaults(handler=_analyze)
 
@@ -193,11 +163,6 @@ def _parser() -> argparse.ArgumentParser:
     explain.add_argument("--standard-pack")
     explain.set_defaults(handler=_explain)
 
-    dataset = commands.add_parser(
-        "validate-dataset", help="validate training or evaluation records"
-    )
-    dataset.add_argument("file")
-    dataset.set_defaults(handler=_validate_dataset)
     return parser
 
 
@@ -205,6 +170,12 @@ def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
     try:
         return int(args.handler(args))
-    except (OSError, StandardValidationError, ValidationError, json.JSONDecodeError) as error:
+    except (
+        OSError,
+        RuntimeError,
+        StandardValidationError,
+        ValidationError,
+        json.JSONDecodeError,
+    ) as error:
         print(str(error), file=sys.stderr)
         return 2

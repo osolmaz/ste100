@@ -14,4 +14,4 @@ python:
       min_tokens: 100
   mutation:
     targets:
-      - src/ste100/protection.py
+      - src/ste100/schemas.py

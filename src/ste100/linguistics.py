@@ -1,0 +1,118 @@
+"""Optional pinned spaCy analysis for deterministic linguistic checks."""
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+from typing import Protocol
+
+from ste100.document import char_to_byte_offsets
+from ste100.models import ByteRange
+
+
+@dataclass(frozen=True, slots=True)
+class LinguisticToken:
+    text: str
+    lemma: str
+    pos: str
+    tag: str
+    dependency: str
+    head_index: int
+    morphology: frozenset[str]
+    byte_range: ByteRange
+
+
+@dataclass(frozen=True, slots=True)
+class LinguisticSentence:
+    text: str
+    tokens: tuple[LinguisticToken, ...]
+    byte_range: ByteRange
+
+
+class LinguisticAnalyzer(Protocol):
+    """Provide pinned linguistic evidence without deciding STE conformance."""
+
+    @property
+    def analyzer_id(self) -> str: ...
+
+    def analyze(self, text: str) -> tuple[LinguisticSentence, ...]: ...
+
+
+class SpacyAnalyzer:
+    """Adapt an installed spaCy English pipeline to stable checker records."""
+
+    def __init__(self, model_name: str = "en_core_web_sm") -> None:
+        try:
+            import spacy
+        except ImportError as error:  # pragma: no cover - depends on optional installation
+            raise RuntimeError("install the 'spacy' extra to use linguistic checks") from error
+        try:
+            self._pipeline = spacy.load(model_name)
+        except OSError as error:  # pragma: no cover - depends on optional installation
+            raise RuntimeError(f"spaCy pipeline is not installed: {model_name}") from error
+        if not {"parser", "tagger", "morphologizer"} & set(self._pipeline.pipe_names):
+            raise RuntimeError("spaCy pipeline must provide POS, morphology, and dependencies")
+        version = self._pipeline.meta.get("version", "unknown")
+        self._analyzer_id = f"spacy:{model_name}:{version}"
+
+    @property
+    def analyzer_id(self) -> str:
+        return self._analyzer_id
+
+    def analyze(self, text: str) -> tuple[LinguisticSentence, ...]:
+        document = self._pipeline(text)
+        offsets = char_to_byte_offsets(text)
+        sentences: list[LinguisticSentence] = []
+        for sentence in document.sents:
+            tokens = tuple(
+                LinguisticToken(
+                    text=token.text,
+                    lemma=token.lemma_.casefold(),
+                    pos=token.pos_,
+                    tag=token.tag_,
+                    dependency=token.dep_,
+                    head_index=token.head.i,
+                    morphology=frozenset(str(token.morph).split("|")),
+                    byte_range=ByteRange(
+                        start=offsets[token.idx],
+                        end=offsets[token.idx + len(token.text)],
+                    ),
+                )
+                for token in sentence
+                if not token.is_space
+            )
+            sentences.append(
+                LinguisticSentence(
+                    text=sentence.text,
+                    tokens=tokens,
+                    byte_range=ByteRange(
+                        start=offsets[sentence.start_char],
+                        end=offsets[sentence.end_char],
+                    ),
+                )
+            )
+        return _merge_markers(text, tuple(sentences))
+
+
+def _merge_markers(
+    text: str, sentences: tuple[LinguisticSentence, ...]
+) -> tuple[LinguisticSentence, ...]:
+    merged: list[LinguisticSentence] = []
+    for sentence in sentences:
+        if merged and re.fullmatch(
+            r"\s*(?:(?:\d+(?:\.\d+)*|[a-z])[.)]|NOTE:|WARNING:|CAUTION:)\s*",
+            merged[-1].text,
+            re.IGNORECASE,
+        ):
+            marker = merged.pop()
+            byte_range = ByteRange(start=marker.byte_range.start, end=sentence.byte_range.end)
+            merged.append(
+                LinguisticSentence(
+                    text=text.encode("utf-8")[byte_range.start : byte_range.end].decode("utf-8"),
+                    tokens=(*marker.tokens, *sentence.tokens),
+                    byte_range=byte_range,
+                )
+            )
+        else:
+            merged.append(sentence)
+    return tuple(merged)

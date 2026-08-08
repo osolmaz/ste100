@@ -101,6 +101,7 @@
           "type": "string"
         },
         "source_file": {
+          "minLength": 1,
           "title": "Source File",
           "type": "string"
         }

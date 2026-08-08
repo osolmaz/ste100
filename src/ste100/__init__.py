@@ -1,4 +1,4 @@
-"""Deterministic STE100 analysis and learned-component contracts."""
+"""Offline deterministic ASD-STE100 analysis."""
 
 from ste100.checker import analyze
 from ste100.document import parse_document

@@ -22,11 +22,20 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run mypy
       - run: uv run pytest --cov --cov-report=term-missing
+      - name: Verify generated artifacts
+        run: |
+          uv run python scripts/generate-schemas.py
+          uv run python scripts/build-standard-pack.py
+          git diff --exit-code
+      - name: Build and inspect distributions
+        run: |
+          uv build
+          uv run python scripts/check-wheel.py dist
       - run: uv run pip-audit
       - name: Run mutmut mutation gate
         run: |
           uv run mutmut run
           uv run python scripts/check-mutation.py --results-only --min-kill-rate 80
       - run: uvx slophammer-py@0.4.0 dry .
-      - run: npx --yes simpledoc@latest check README.md docs/*.md
+      - run: npx --yes simpledoc@latest check README.md docs/*.md docs/releases/*.md
       - run: uvx slophammer-py@0.4.0 check . --execute

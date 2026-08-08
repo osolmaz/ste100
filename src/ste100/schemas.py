@@ -11,9 +11,7 @@ from pydantic import TypeAdapter
 from ste100.models import (
     AnalysisResult,
     ConformanceRecord,
-    DatasetRecord,
     DictionaryEntry,
-    ModelManifest,
     ProjectDictionary,
     RuleRecord,
     StandardExample,
@@ -28,8 +26,6 @@ _SCHEMA_TYPES: dict[str, Any] = {
     "conformance.schema.json": list[ConformanceRecord],
     "project-dictionary.schema.json": ProjectDictionary,
     "analysis.schema.json": AnalysisResult,
-    "dataset-record.schema.json": DatasetRecord,
-    "model-manifest.schema.json": ModelManifest,
 }
 
 

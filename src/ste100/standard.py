@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from functools import lru_cache
+from importlib.resources import files
 from pathlib import Path
 from typing import Literal
 
@@ -130,6 +132,10 @@ def _add(issues: list[ValidationIssue], code: str, message: str, path: str | Non
     issues.append(ValidationIssue(code=code, message=message, path=path))
 
 
+def _warn(issues: list[ValidationIssue], code: str, message: str) -> None:
+    issues.append(ValidationIssue(code=code, message=message, severity="warning"))
+
+
 def _check_duplicates(
     issues: list[ValidationIssue],
     values: list[str],
@@ -228,6 +234,16 @@ def _check_ids(artifacts: _Artifacts, issues: list[ValidationIssue]) -> None:
     )
     for values, label, path in groups:
         _check_duplicates(issues, values, label=label, path=path)
+    dictionary_keys = [
+        f"{entry.status}:{entry.word.casefold()}:{','.join(entry.parts_of_speech)}"
+        for entry in artifacts.dictionary
+    ]
+    _check_duplicates(
+        issues,
+        dictionary_keys,
+        label="dictionary status/headword/part-of-speech key",
+        path="dictionary.json",
+    )
 
 
 def _check_references(artifacts: _Artifacts, issues: list[ValidationIssue]) -> None:
@@ -306,11 +322,16 @@ def validate_standard_pack(root: Path, *, allow_draft: bool = False) -> Validati
         return ValidationReport(tuple(issues))
     if manifest.review_state is ReviewState.DRAFT and not allow_draft:
         _add(issues, "draft_pack", "runtime loading requires a reviewed standard pack")
-    if manifest.expected_counts.model_dump() != _ISSUE9_COUNTS:
-        _add(
+    published_differences = {
+        name: manifest.expected_counts.model_dump()[name] - published
+        for name, published in _ISSUE9_COUNTS.items()
+        if manifest.expected_counts.model_dump()[name] != published
+    }
+    if published_differences:
+        _warn(
             issues,
-            "invalid_expected_counts",
-            "Issue 9 expected counts must match the published standard counts",
+            "published_count_difference",
+            f"pack counts differ from the published totals: {published_differences}",
         )
     _check_artifact_set(manifest, issues)
     artifacts = _load_artifacts(_resolve_artifacts(root, manifest, issues), issues)
@@ -320,6 +341,19 @@ def validate_standard_pack(root: Path, *, allow_draft: bool = False) -> Validati
         _check_counts(manifest, artifacts, issues)
         _check_review_state(manifest, artifacts, issues)
     return ValidationReport(tuple(issues))
+
+
+def bundled_standard_path() -> Path:
+    """Return the installed bundled Issue 9 pack path."""
+
+    return Path(str(files("ste100.data").joinpath("issue9")))
+
+
+@lru_cache(maxsize=1)
+def load_bundled_standard() -> StandardPack:
+    """Load and cache the bundled deterministic Issue 9 pack."""
+
+    return load_standard_pack(bundled_standard_path())
 
 
 def load_standard_pack(root: Path) -> StandardPack:

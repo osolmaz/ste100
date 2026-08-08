@@ -11,6 +11,6 @@ htmlcov/
 .mutmut-cache/
 mutants/
 
-# Generated standard drafts
+# Generated build outputs
 build/
 dist/

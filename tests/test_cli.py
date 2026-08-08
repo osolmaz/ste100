@@ -19,7 +19,8 @@ def test_cli_analyze_json_and_text(
     assert main(["analyze", str(source), "--format", "json"]) == 1
     payload = json.loads(capsys.readouterr().out)
     assert payload["official_compliance_claimed"] is False
-    assert {item["rule_id"] for item in payload["findings"]} == {"4.2", "8.1"}
+    rule_ids = {item["rule_id"] for item in payload["findings"]}
+    assert {"4.2", "8.1"} <= rule_ids
 
     assert main(["analyze", str(source)]) == 1
     output = capsys.readouterr().out
@@ -37,11 +38,9 @@ def test_cli_validates_pack_and_explains_bundled_rule(
 
     assert main(["explain", "8.1"]) == 0
     payload = json.loads(capsys.readouterr().out)
-    assert payload["rule"] == {
-        "rule_id": "8.1",
-        "requirement": None,
-        "review_state": "reviewed_standard_pack_required",
-    }
+    assert payload["rule"]["rule_id"] == "8.1"
+    assert "semicolon" in payload["rule"]["requirement"]
+    assert payload["rule"]["review_state"] == "reviewed"
     assert payload["conformance"]["coverage_scope"] == "full"
 
     assert main(["explain", "8.1", "--standard-pack", str(pack)]) == 0
@@ -94,7 +93,7 @@ def test_cli_analyzes_with_reviewed_pack_and_project_dictionary(
     assert json.loads(capsys.readouterr().out)["findings"] == []
 
 
-def test_cli_rejects_invalid_project_dictionary_and_dataset(
+def test_cli_rejects_invalid_project_dictionary(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -103,10 +102,29 @@ def test_cli_rejects_invalid_project_dictionary_and_dataset(
     assert main(["validate-project-dictionary", str(project)]) == 1
     assert json.loads(capsys.readouterr().out)["valid"] is False
 
-    dataset = tmp_path / "dataset.jsonl"
-    dataset.write_text("{not-json}\n", encoding="utf-8")
-    assert main(["validate-dataset", str(dataset)]) == 1
-    assert json.loads(capsys.readouterr().out)["issues"][0]["code"] == "invalid_dataset"
+
+def test_cli_runs_pinned_spacy_checks(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    source = tmp_path / "procedure.txt"
+    source.write_text("1. The access panel is opened.", encoding="utf-8")
+    assert main(["analyze", str(source), "--spacy", "--format", "json"]) == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert {item["rule_id"] for item in payload["findings"]} >= {"3.6", "5.3"}
+
+
+def test_cli_extracts_a_valid_runtime_pack(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    output = tmp_path / "issue9"
+    assert main(["extract-standard", "docs/ASD-STE100_ISSUE9.txt", str(output)]) == 0
+    manifest = json.loads(capsys.readouterr().out)
+    assert manifest["review_state"] == "reviewed"
+    assert manifest["expected_counts"]["approved_words"] == 876
+    assert main(["validate-standard", str(output)]) == 0
+    assert json.loads(capsys.readouterr().out)["valid"] is True
 
 
 def test_cli_returns_configuration_error_for_missing_input(
