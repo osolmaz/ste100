@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import shutil
 import subprocess
 import sys
 
@@ -24,13 +25,7 @@ def _run_mutations() -> None:
         raise subprocess.CalledProcessError(completed.returncode, completed.args)
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--results-only", action="store_true")
-    parser.add_argument("--min-kill-rate", type=float, default=DEFAULT_MINIMUM_SCORE)
-    args = parser.parse_args()
-    if not args.results_only:
-        _run_mutations()
+def _score_results(minimum: float) -> int:
     completed = subprocess.run(
         ["uv", "run", "mutmut", "results", "--all", "true"],
         check=True,
@@ -52,7 +47,20 @@ def main() -> int:
     )
     if timeout:
         return 1
-    return 0 if score >= args.min_kill_rate else 1
+    return 0 if score >= minimum else 1
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--results-only", action="store_true")
+    parser.add_argument("--min-kill-rate", type=float, default=DEFAULT_MINIMUM_SCORE)
+    args = parser.parse_args()
+    try:
+        if not args.results_only:
+            _run_mutations()
+        return _score_results(args.min_kill_rate)
+    finally:
+        shutil.rmtree("mutants", ignore_errors=True)
 
 
 if __name__ == "__main__":
