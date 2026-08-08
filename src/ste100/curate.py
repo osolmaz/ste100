@@ -188,6 +188,12 @@ def _wrapped_headword(line: str, column_two: int) -> str:
     separated = re.split(r"\s{2,}", line.strip(), maxsplit=1)
     if len(separated) > 1 and len(separated[0]) <= column_two:
         return separated[0].rstrip(",")
+    approved = re.match(r"^([A-Z][A-Z0-9 /'\-]*?)(?=\s+[A-Z][a-z])", line)
+    if approved is not None:
+        return approved.group(1).strip()
+    unapproved = re.match(r"^([a-z][a-z0-9 /'\-]*?)(?=\s+[A-Z]{2,})", line)
+    if unapproved is not None:
+        return unapproved.group(1).strip()
     return re.sub(r"\s+(?:[A-Z][a-z]{0,12}|[A-Z]{1,8})$", "", first_column).strip()
 
 
@@ -197,10 +203,11 @@ def _is_approved_headword(word: str) -> bool:
     return bool(letters) and letters.isupper()
 
 
-def _canonical_word(displayed: str) -> tuple[str, tuple[str, ...]]:
+def _canonical_word(displayed: str) -> tuple[str, tuple[str, ...], str | None]:
     value = displayed.replace("…", "...").strip().strip(",")
     parenthetical = re.fullmatch(r"([^()]*)\(([^()]*)\)", value)
     aliases: list[str] = []
+    qualifier: str | None = None
     if parenthetical is not None:
         outside = parenthetical.group(1).strip()
         inside = parenthetical.group(2).strip()
@@ -208,15 +215,19 @@ def _canonical_word(displayed: str) -> tuple[str, tuple[str, ...]]:
             value = outside
             aliases.append(inside[3:].strip())
         elif outside and inside:
-            value = (
-                inside if outside.casefold() in inside.casefold().split() else f"{outside} {inside}"
+            value = outside
+            qualifier = (
+                inside
+                if any(token.startswith(outside.casefold()) for token in inside.casefold().split())
+                else f"{outside} {inside}"
             )
-            aliases.append(outside)
         else:
             value = outside or inside
     value = re.sub(r"\s+", " ", value).strip().casefold()
     aliases = [re.sub(r"\s+", " ", item).strip().casefold() for item in aliases if item]
-    return value, tuple(dict.fromkeys(aliases))
+    if qualifier is not None:
+        qualifier = re.sub(r"\s+", " ", qualifier).strip().casefold()
+    return value, tuple(dict.fromkeys(aliases)), qualifier
 
 
 def _forms(row: _DictionaryRow, aliases: tuple[str, ...]) -> tuple[str, ...]:
@@ -255,11 +266,12 @@ def build_dictionary(text: str) -> tuple[DictionaryEntry, ...]:
     digest = sha256_digest(text.encode("utf-8"))
     entries: list[DictionaryEntry] = []
     for row_number, row in enumerate(_dictionary_rows(text), 1):
-        word, aliases = _canonical_word(row.word)
+        word, aliases, qualifier = _canonical_word(row.word)
         entries.append(
             DictionaryEntry(
                 entry_id=_entry_id(row.status, word, row.part_of_speech, row_number),
                 word=word,
+                qualifier=qualifier,
                 status=row.status,
                 parts_of_speech=(row.part_of_speech,),
                 approved_meanings=(),

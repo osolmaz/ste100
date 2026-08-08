@@ -116,8 +116,8 @@ def test_bundled_runtime_pack_is_valid_and_source_traceable() -> None:
     assert len(pack.rules) == 61
     assert len(pack.conformance) == 61
     assert len(pack.examples) >= 15
-    assert sum(entry.status == "approved" for entry in pack.dictionary) == 877
-    assert sum(entry.status == "unapproved" for entry in pack.dictionary) == 1319
+    assert sum(entry.status == "approved" for entry in pack.dictionary) == 878
+    assert sum(entry.status == "unapproved" for entry in pack.dictionary) == 1318
     assert pack.manifest.published_counts.approved_words == 875
     assert pack.manifest.published_counts.unapproved_words == 1274
     assert "All source-traceable rows are retained" in pack.manifest.count_reconciliation
@@ -130,7 +130,10 @@ def test_bundled_runtime_pack_is_valid_and_source_traceable() -> None:
 def test_bundled_dictionary_has_unique_ids_and_status_pos_keys() -> None:
     dictionary = load_bundled_standard().dictionary
     assert len({entry.entry_id for entry in dictionary}) == len(dictionary)
-    keys = {(entry.word.casefold(), entry.status, entry.parts_of_speech) for entry in dictionary}
+    keys = {
+        (entry.word.casefold(), entry.qualifier, entry.status, entry.parts_of_speech)
+        for entry in dictionary
+    }
     assert len(keys) == len(dictionary)
     assert all(entry.word == entry.word.casefold() for entry in dictionary)
     assert all(entry.parts_of_speech for entry in dictionary)
@@ -141,9 +144,17 @@ def test_wrapped_dictionary_headwords_do_not_include_column_bleed() -> None:
     dictionary = load_bundled_standard().dictionary
     by_word = {entry.word: entry for entry in dictionary}
     assert by_word["electronically"].status == "approved"
+    assert by_word["longitudinally"].status == "approved"
     assert by_word["precautionary"].status == "unapproved"
     assert any(entry.word == "heat" and entry.status == "approved" for entry in dictionary)
-    assert not {"electronically rela", "precautionary p", "heard heat"} & set(by_word)
+    assert not {
+        "electronically rela",
+        "longitudinally in a",
+        "precautionary p",
+        "heard heat",
+        "long no longer",
+    } & set(by_word)
+    assert any(entry.word == "long" and entry.qualifier == "no longer" for entry in dictionary)
 
 
 def test_bundled_approved_forms_preserve_delimiters_and_hyphens() -> None:
@@ -185,9 +196,13 @@ def test_every_bundled_dictionary_entry_is_indexed() -> None:
     pack = load_bundled_standard()
     index = pack.dictionary_by_word
     for entry in pack.dictionary:
-        assert entry in index[entry.word.casefold()]
-        for form in entry.approved_forms:
-            assert entry in index[form.casefold()]
+        expressions = (
+            (entry.qualifier,)
+            if entry.qualifier is not None
+            else (entry.word, *entry.approved_forms)
+        )
+        for expression in expressions:
+            assert entry in index[expression.casefold()]
 
 
 def test_standard_pack_requires_canonical_issue9_rule_ids(tmp_path: Path) -> None:
