@@ -12,7 +12,6 @@ from pydantic import ValidationError
 from ste100.checker import analyze
 from ste100.curate import write_runtime_pack
 from ste100.linguistics import SpacyAnalyzer
-from ste100.models import FindingKind
 from ste100.standard import (
     StandardPack,
     StandardValidationError,
@@ -36,7 +35,6 @@ def _report_payload(report: ValidationReport) -> dict[str, object]:
                 "code": issue.code,
                 "message": issue.message,
                 "path": issue.path,
-                "severity": issue.severity,
             }
             for issue in report.issues
         ],
@@ -50,7 +48,7 @@ def _load_pack(path: str | None) -> StandardPack:
 
 
 def _validate_standard(args: argparse.Namespace) -> int:
-    report = validate_standard_pack(Path(args.pack), allow_draft=args.allow_draft)
+    report = validate_standard_pack(Path(args.pack))
     _json(_report_payload(report))
     return 0 if report.valid else 1
 
@@ -85,17 +83,12 @@ def _analyze(args: argparse.Namespace) -> int:
     if args.format == "json":
         _json(result.model_dump(mode="json"))
     else:
-        print("Unofficial analysis. This result does not certify ASD-STE100 compliance.")
+        print("PASS" if result.passed else "FAIL")
         for finding in result.findings:
-            location = (
-                "document"
-                if finding.byte_range is None
-                else f"bytes {finding.byte_range.start}:{finding.byte_range.end}"
-            )
-            print(f"{finding.kind.value:20} {finding.rule_id:6} {location}: {finding.message}")
-        checked = sum(item.status in {"passed", "failed"} for item in result.coverage)
-        print(f"Coverage: {checked}/{len(result.coverage)} rules received conclusive checks.")
-    return int(any(item.kind is FindingKind.VIOLATION for item in result.findings))
+            rules = ", ".join(finding.rule_ids)
+            location = f"bytes {finding.byte_range.start}:{finding.byte_range.end}"
+            print(f"Rules {rules} {location}: {finding.message}")
+    return int(not result.passed)
 
 
 def _validate_project(args: argparse.Namespace) -> int:
@@ -109,31 +102,23 @@ def _validate_project(args: argparse.Namespace) -> int:
 def _explain(args: argparse.Namespace) -> int:
     standard = _load_pack(args.standard_pack)
     rule = standard.rules_by_id.get(args.rule)
-    conformance = {item.rule_id: item for item in standard.conformance}.get(args.rule)
-    if rule is None or conformance is None:
+    if rule is None:
         print(f"Unknown rule: {args.rule}", file=sys.stderr)
         return 1
-    _json(
-        {
-            "rule": rule.model_dump(mode="json"),
-            "conformance": conformance.model_dump(mode="json"),
-            "official_compliance_claimed": False,
-        }
-    )
+    _json(rule.model_dump(mode="json"))
     return 0
 
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ste100",
-        description="Unofficial deterministic ASD-STE100 analysis and data validation.",
+        description="Check text with source-backed ASD-STE100 Issue 9 checks.",
     )
-    parser.add_argument("--version", action="version", version="%(prog)s 0.1.0")
+    parser.add_argument("--version", action="version", version="%(prog)s 0.2.0")
     commands = parser.add_subparsers(dest="command", required=True)
 
-    validate = commands.add_parser("validate-standard", help="validate a reviewed standard pack")
+    validate = commands.add_parser("validate-standard", help="validate extracted standard data")
     validate.add_argument("pack")
-    validate.add_argument("--allow-draft", action="store_true")
     validate.set_defaults(handler=_validate_standard)
 
     extract = commands.add_parser("extract-standard", help="build a source-traceable Issue 9 pack")
@@ -156,7 +141,7 @@ def _parser() -> argparse.ArgumentParser:
     project.add_argument("file")
     project.set_defaults(handler=_validate_project)
 
-    explain = commands.add_parser("explain", help="explain one Issue 9 rule and its coverage")
+    explain = commands.add_parser("explain", help="show one extracted Issue 9 requirement")
     explain.add_argument("rule")
     explain.add_argument("--standard-pack")
     explain.set_defaults(handler=_explain)

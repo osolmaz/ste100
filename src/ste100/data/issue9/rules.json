@@ -1,8 +1,6 @@
 [
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Use words that are: - Approved in the dictionary - Technical nouns - Technical verbs.",
-    "review_state": "reviewed",
     "rule_id": "1.1",
     "source": {
       "line_end": null,
@@ -11,13 +9,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Use approved words from the dictionary only as the specified part of speech.",
-    "review_state": "reviewed",
     "rule_id": "1.2",
     "source": {
       "line_end": null,
@@ -26,13 +21,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "Use approved words only with their approved meanings.",
-    "review_state": "reviewed",
     "rule_id": "1.3",
     "source": {
       "line_end": null,
@@ -41,13 +33,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Use only the approved forms of verbs and adjectives.",
-    "review_state": "reviewed",
     "rule_id": "1.4",
     "source": {
       "line_end": null,
@@ -56,13 +45,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "You can use words that you can include in a technical noun category.",
-    "review_state": "reviewed",
     "rule_id": "1.5",
     "source": {
       "line_end": null,
@@ -71,13 +57,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Use a word that is not approved in the dictionary, only when it is a technical noun or part of a technical noun.",
-    "review_state": "reviewed",
     "rule_id": "1.6",
     "source": {
       "line_end": null,
@@ -86,13 +69,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Do not use words that are technical nouns as verbs.",
-    "review_state": "reviewed",
     "rule_id": "1.7",
     "source": {
       "line_end": null,
@@ -101,13 +81,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Use technical nouns that are approved in your company, industry, or subject field.",
-    "review_state": "reviewed",
     "rule_id": "1.8",
     "source": {
       "line_end": null,
@@ -116,13 +93,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "When you must select a technical noun, use one which is short and easy to understand.",
-    "review_state": "reviewed",
     "rule_id": "1.9",
     "source": {
       "line_end": null,
@@ -131,13 +105,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "Do not use regional, slang, or jargon words as technical nouns.",
-    "review_state": "reviewed",
     "rule_id": "1.10",
     "source": {
       "line_end": null,
@@ -146,13 +117,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Do not use different technical nouns for the same item.",
-    "review_state": "reviewed",
     "rule_id": "1.11",
     "source": {
       "line_end": null,
@@ -161,13 +129,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "You can use verbs that you can include in a technical verb category.",
-    "review_state": "reviewed",
     "rule_id": "1.12",
     "source": {
       "line_end": null,
@@ -176,13 +141,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Do not use technical verbs as nouns.",
-    "review_state": "reviewed",
     "rule_id": "1.13",
     "source": {
       "line_end": null,
@@ -191,13 +153,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Use American English spelling unless other official directives tell you differently.",
-    "review_state": "reviewed",
     "rule_id": "1.14",
     "source": {
       "line_end": null,
@@ -206,13 +165,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Write multi-word nouns of no more than three words.",
-    "review_state": "reviewed",
     "rule_id": "2.1",
     "source": {
       "line_end": null,
@@ -221,13 +177,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "When a technical noun has more than three words, write it in full. Then, you can use one of these methods to make the technical noun clear: - Give a shorter form of the technical noun. - Use hyphens (-) between words that you use as one unit.",
-    "review_state": "reviewed",
     "rule_id": "2.2",
     "source": {
       "line_end": null,
@@ -236,13 +189,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Use only the verb forms that are given in the dictionary.",
-    "review_state": "reviewed",
     "rule_id": "3.1",
     "source": {
       "line_end": null,
@@ -251,13 +201,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Use only these verb forms and tenses of verbs: - The infinitive form - The imperative form (command form) - The simple present tense - The simple past tense - The simple future tense - The past participle form (as an adjective).",
-    "review_state": "reviewed",
     "rule_id": "3.2",
     "source": {
       "line_end": null,
@@ -266,13 +213,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "Use the past participle form as an adjective.",
-    "review_state": "reviewed",
     "rule_id": "3.3",
     "source": {
       "line_end": null,
@@ -281,13 +225,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Do not use auxiliary verbs to make complex verb constructions.",
-    "review_state": "reviewed",
     "rule_id": "3.4",
     "source": {
       "line_end": null,
@@ -296,13 +237,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Use the “-ing” form of a verb only as a technical noun or as a modifier in a technical noun.",
-    "review_state": "reviewed",
     "rule_id": "3.5",
     "source": {
       "line_end": null,
@@ -311,13 +249,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Use the active voice. In descriptive writing, you can use the passive voice only when the agent is unknown.",
-    "review_state": "reviewed",
     "rule_id": "3.6",
     "source": {
       "line_end": null,
@@ -326,13 +261,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "Use an approved verb to describe an action, not a noun or other parts of speech.",
-    "review_state": "reviewed",
     "rule_id": "3.7",
     "source": {
       "line_end": null,
@@ -341,13 +273,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "Write short and clear sentences.",
-    "review_state": "reviewed",
     "rule_id": "4.1",
     "source": {
       "line_end": null,
@@ -356,13 +285,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Do not omit words or use contractions to make your sentences shorter.",
-    "review_state": "reviewed",
     "rule_id": "4.2",
     "source": {
       "line_end": null,
@@ -371,13 +297,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Use a vertical list for complex texts.",
-    "review_state": "reviewed",
     "rule_id": "4.3",
     "source": {
       "line_end": null,
@@ -386,13 +309,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "Use connecting words and connecting phrases to connect sentences that contain related topics.",
-    "review_state": "reviewed",
     "rule_id": "4.4",
     "source": {
       "line_end": null,
@@ -401,13 +321,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "When applicable, use an article (the, a, an) or a demonstrative adjective (this, these) before a noun or a multi-word noun.",
-    "review_state": "reviewed",
     "rule_id": "4.5",
     "source": {
       "line_end": null,
@@ -416,13 +333,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Write short sentences. Use a maximum of 20 words in each sentence.",
-    "review_state": "reviewed",
     "rule_id": "5.1",
     "source": {
       "line_end": null,
@@ -431,13 +345,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Write only one instruction in each sentence unless two or more actions occur at the same time.",
-    "review_state": "reviewed",
     "rule_id": "5.2",
     "source": {
       "line_end": null,
@@ -446,13 +357,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Write instructions in the imperative (command) form.",
-    "review_state": "reviewed",
     "rule_id": "5.3",
     "source": {
       "line_end": null,
@@ -461,13 +369,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "When there is a condition that the reader must know about first, start the instruction with a descriptive statement. Then, divide that descriptive statement from the command with a comma.",
-    "review_state": "reviewed",
     "rule_id": "5.4",
     "source": {
       "line_end": null,
@@ -476,13 +381,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Write notes only to give information, not instructions.",
-    "review_state": "reviewed",
     "rule_id": "5.5",
     "source": {
       "line_end": null,
@@ -491,13 +393,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "Give information gradually.",
-    "review_state": "reviewed",
     "rule_id": "6.1",
     "source": {
       "line_end": null,
@@ -506,13 +405,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "Use key words and key phrases to give your text a logical structure.",
-    "review_state": "reviewed",
     "rule_id": "6.2",
     "source": {
       "line_end": null,
@@ -521,13 +417,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Write short sentences. Use a maximum of 25 words in each sentence.",
-    "review_state": "reviewed",
     "rule_id": "6.3",
     "source": {
       "line_end": null,
@@ -536,13 +429,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "Use paragraphs to show related information.",
-    "review_state": "reviewed",
     "rule_id": "6.4",
     "source": {
       "line_end": null,
@@ -551,13 +441,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "Make sure that each paragraph has only one topic.",
-    "review_state": "reviewed",
     "rule_id": "6.5",
     "source": {
       "line_end": null,
@@ -566,13 +453,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Make sure that no paragraph has more than six sentences.",
-    "review_state": "reviewed",
     "rule_id": "6.6",
     "source": {
       "line_end": null,
@@ -581,13 +465,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "Use an applicable word (for example, “warning” or “caution”) to identify the level of risk.",
-    "review_state": "reviewed",
     "rule_id": "7.1",
     "source": {
       "line_end": null,
@@ -596,13 +477,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Start a safety instruction with a clear and accurate command or condition.",
-    "review_state": "reviewed",
     "rule_id": "7.2",
     "source": {
       "line_end": null,
@@ -611,13 +489,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "Give an explanation to show the risk or possible result.",
-    "review_state": "reviewed",
     "rule_id": "7.3",
     "source": {
       "line_end": null,
@@ -626,13 +501,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "You can use all standard English punctuation marks but not the semicolon (;).",
-    "review_state": "reviewed",
     "rule_id": "8.1",
     "source": {
       "line_end": null,
@@ -641,13 +513,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "Use hyphens (-) to connect words that are directly related.",
-    "review_state": "reviewed",
     "rule_id": "8.2",
     "source": {
       "line_end": null,
@@ -656,13 +525,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "You can use parentheses: - To make references to illustrations or text - To include letters or numbers that identify items on an illustration or in a text - To identify the work steps in a procedure - To include abbreviations - To give the singular and plural forms of a noun at the same time - To explain words or a part of a sentence - To include an alternative.",
-    "review_state": "reviewed",
     "rule_id": "8.3",
     "source": {
       "line_end": null,
@@ -671,13 +537,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "In a vertical list, a colon (:) has the same effect on word count as a period and shows the end of a sentence.",
-    "review_state": "reviewed",
     "rule_id": "8.4",
     "source": {
       "line_end": null,
@@ -686,13 +549,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "When you put text in parentheses, it counts as one word in that sentence.",
-    "review_state": "reviewed",
     "rule_id": "8.5",
     "source": {
       "line_end": null,
@@ -701,13 +561,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Count each of these elements as one word: - Numbers - Numbers together with units of measurement - Abbreviations - Alphanumeric identifiers - Quoted text - Titles, headings, placards, and labels - Proper nouns of individuals, groups, organizations, and geopolitical entities.",
-    "review_state": "reviewed",
     "rule_id": "8.6",
     "source": {
       "line_end": null,
@@ -716,13 +573,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Hyphenated words count as one word.",
-    "review_state": "reviewed",
     "rule_id": "8.7",
     "source": {
       "line_end": null,
@@ -731,13 +585,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "Use a different sentence construction to write a sentence when a word-for-word replacement is not sufficient.",
-    "review_state": "reviewed",
     "rule_id": "9.1",
     "source": {
       "line_end": null,
@@ -746,13 +597,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "Use each approved word correctly.",
-    "review_state": "reviewed",
     "rule_id": "9.2",
     "source": {
       "line_end": null,
@@ -761,13 +609,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "When you use two words together, do not make phrasal verbs.",
-    "review_state": "reviewed",
     "rule_id": "9.3",
     "source": {
       "line_end": null,
@@ -776,13 +621,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "When you select terminology or wording, always use a consistent style.",
-    "review_state": "reviewed",
     "rule_id": "9.4",
     "source": {
       "line_end": null,
@@ -791,13 +633,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "The conjunction “that”",
-    "review_state": "reviewed",
     "rule_id": "GR-1",
     "source": {
       "line_end": null,
@@ -806,13 +645,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "The preposition “with”",
-    "review_state": "reviewed",
     "rule_id": "GR-2",
     "source": {
       "line_end": null,
@@ -821,13 +657,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "How to use pronouns",
-    "review_state": "reviewed",
     "rule_id": "GR-3",
     "source": {
       "line_end": null,
@@ -836,13 +669,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "The pronoun “this”",
-    "review_state": "reviewed",
     "rule_id": "GR-4",
     "source": {
       "line_end": null,
@@ -851,13 +681,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "False friends",
-    "review_state": "reviewed",
     "rule_id": "GR-5",
     "source": {
       "line_end": null,
@@ -866,13 +693,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Latin abbreviations",
-    "review_state": "reviewed",
     "rule_id": "GR-6",
     "source": {
       "line_end": null,
@@ -881,13 +705,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The checker covers the mechanically decidable clause recorded in conformance.json.",
     "requirement": "Inclusive language",
-    "review_state": "reviewed",
     "rule_id": "GR-7",
     "source": {
       "line_end": null,
@@ -896,13 +717,10 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "deterministic"
+    }
   },
   {
-    "notes": "The requirement needs human judgment.",
     "requirement": "Possessive form",
-    "review_state": "reviewed",
     "rule_id": "GR-8",
     "source": {
       "line_end": null,
@@ -911,7 +729,6 @@
       "row": null,
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "treatment": "human_review"
+    }
   }
 ]

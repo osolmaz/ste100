@@ -9,15 +9,9 @@ import pytest
 from pydantic import BaseModel
 
 from ste100.models import (
-    ConformanceRecord,
     DictionaryEntry,
-    DictionaryMeaning,
-    ExpectedCounts,
-    ReviewState,
     RuleRecord,
-    RuleTreatment,
     SourceLocation,
-    StandardExample,
     StandardManifest,
 )
 from ste100.rule_ids import ISSUE9_RULE_IDS
@@ -38,7 +32,7 @@ def _digest(path: Path) -> str:
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def make_standard_pack(root: Path, *, review_state: ReviewState = ReviewState.REVIEWED) -> Path:
+def make_standard_pack(root: Path) -> Path:
     root.mkdir()
     rules = [
         RuleRecord(
@@ -48,14 +42,8 @@ def make_standard_pack(root: Path, *, review_state: ReviewState = ReviewState.RE
                 if rule_id == "1.1"
                 else "Do not use semicolons."
                 if rule_id == "8.1"
-                else f"Reviewed requirement for {rule_id}."
+                else f"Extracted requirement for {rule_id}."
             ),
-            treatment=(
-                RuleTreatment.DETERMINISTIC
-                if rule_id in {"1.1", "8.1"}
-                else RuleTreatment.HUMAN_REVIEW
-            ),
-            review_state=review_state,
             source=_source(),
         )
         for rule_id in ISSUE9_RULE_IDS
@@ -66,13 +54,7 @@ def make_standard_pack(root: Path, *, review_state: ReviewState = ReviewState.RE
             word="install",
             status="approved",
             parts_of_speech=("verb",),
-            approved_meanings=(
-                DictionaryMeaning(
-                    meaning_id="install-v-1", text="Put into position", rule_ids=("1.1",)
-                ),
-            ),
             approved_forms=("installs", "installed"),
-            review_state=review_state,
             source=_source(),
         ),
         DictionaryEntry(
@@ -80,7 +62,6 @@ def make_standard_pack(root: Path, *, review_state: ReviewState = ReviewState.RE
             word="the",
             status="approved",
             parts_of_speech=("article",),
-            review_state=review_state,
             source=_source(),
         ),
         DictionaryEntry(
@@ -89,68 +70,12 @@ def make_standard_pack(root: Path, *, review_state: ReviewState = ReviewState.RE
             status="unapproved",
             parts_of_speech=("verb",),
             alternatives=("use",),
-            review_state=review_state,
             source=_source(),
         ),
-    ]
-    dictionary.extend(
-        DictionaryEntry(
-            entry_id=f"approved-{index:04d}",
-            word=f"approvedword{index}",
-            status="approved",
-            parts_of_speech=("noun",),
-            review_state=review_state,
-            source=_source(),
-        )
-        for index in range(873)
-    )
-    dictionary.extend(
-        DictionaryEntry(
-            entry_id=f"unapproved-{index:04d}",
-            word=f"blockedword{index}",
-            status="unapproved",
-            parts_of_speech=("noun",),
-            alternatives=("approvedword0",),
-            review_state=review_state,
-            source=_source(),
-        )
-        for index in range(1273)
-    )
-    examples = [
-        StandardExample(
-            example_id="example-install",
-            rule_ids=("1.1",),
-            text="INSTALL THE UNIT.",
-            label="positive",
-            review_state=review_state,
-            source=_source(),
-        )
-    ]
-    conformance = [
-        ConformanceRecord(
-            rule_id=rule.rule_id,
-            deterministic_checkers=(
-                ("vocabulary",)
-                if rule.rule_id == "1.1"
-                else ("semicolon",)
-                if rule.rule_id == "8.1"
-                else ()
-            ),
-            coverage_scope=(
-                "full" if rule.rule_id == "8.1" else "partial" if rule.rule_id == "1.1" else "none"
-            ),
-            release_gate="blocking" if rule.rule_id == "8.1" else "human_review",
-            reason="Punctuation is conclusive."
-            if rule.rule_id == "8.1"
-            else "Context review is required.",
-        )
-        for rule in rules
     ]
     files: dict[str, Sequence[BaseModel]] = {
         "rules.json": rules,
         "dictionary.json": dictionary,
-        "examples.json": examples,
-        "conformance.json": conformance,
     }
     for name, records in files.items():
         (root / name).write_text(
@@ -161,21 +86,7 @@ def make_standard_pack(root: Path, *, review_state: ReviewState = ReviewState.RE
         format_version="1",
         standard_id="ASD-STE100",
         issue=9,
-        review_state=review_state,
         source=_source(),
-        expected_counts=ExpectedCounts(
-            numbered_rules=53,
-            general_rules=8,
-            approved_words=875,
-            unapproved_words=1274,
-        ),
-        published_counts=ExpectedCounts(
-            numbered_rules=53,
-            general_rules=8,
-            approved_words=875,
-            unapproved_words=1274,
-        ),
-        count_reconciliation="Fixture counts match the published baseline.",
         file_digests={name: _digest(root / name) for name in files},
     )
     (root / "standard.json").write_text(

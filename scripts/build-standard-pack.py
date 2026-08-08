@@ -13,11 +13,7 @@ def main() -> None:
         ROOT / "docs" / "ASD-STE100_ISSUE9.txt",
         ROOT / "src" / "ste100" / "data" / "issue9",
     )
-    counts = manifest.expected_counts
-    print(
-        f"wrote Issue 9 pack: {counts.approved_words} approved, "
-        f"{counts.unapproved_words} unapproved"
-    )
+    print(f"wrote Issue 9 pack with {len(manifest.file_digests)} extracted artifacts")
 
 
 if __name__ == "__main__":

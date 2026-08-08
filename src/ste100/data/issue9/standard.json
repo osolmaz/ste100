@@ -1,26 +1,10 @@
 {
-  "count_reconciliation": "The fixed-column source table yields 878 approved and 1315 unapproved unique status/headword/part-of-speech rows after wrapped headwords are repaired. All source-traceable rows are retained; no row is deleted to force the printed totals.",
-  "expected_counts": {
-    "approved_words": 878,
-    "general_rules": 8,
-    "numbered_rules": 53,
-    "unapproved_words": 1315
-  },
   "file_digests": {
-    "conformance.json": "sha256:443212c781efb5de9213160fc44781ff58d7a4bf960ce914970e15145ccfe130",
-    "dictionary.json": "sha256:3b2b657900407f754180e4357fb17436dd66c0dcb0d668d0ed975a5204f918fc",
-    "examples.json": "sha256:28b6d7f28232ecec779922764b7b820b8434417aad54d323aa3533625304da6c",
-    "rules.json": "sha256:19260dcbca62b0af4f786aeac972ae51685fa6a7665cac30e9743dc73a1d5226"
+    "dictionary.json": "sha256:2c758ea7a6d1f573930af8faf4832b961c334edbb1f3147cf63b44b86996ca10",
+    "rules.json": "sha256:4ba4c6b5b10922356880d0558ebbf4ffb2847f32adefb2fd3105c576426042dc"
   },
   "format_version": "1",
   "issue": 9,
-  "published_counts": {
-    "approved_words": 875,
-    "general_rules": 8,
-    "numbered_rules": 53,
-    "unapproved_words": 1274
-  },
-  "review_state": "reviewed",
   "source": {
     "line_end": null,
     "line_start": null,

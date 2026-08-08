@@ -12,17 +12,7 @@ from typing import Literal
 from pydantic import BaseModel
 
 from ste100.extract import extract_rule_candidates, sha256_digest
-from ste100.models import (
-    ConformanceRecord,
-    DictionaryEntry,
-    ExpectedCounts,
-    ReviewState,
-    RuleRecord,
-    RuleTreatment,
-    SourceLocation,
-    StandardExample,
-    StandardManifest,
-)
+from ste100.models import DictionaryEntry, RuleRecord, SourceLocation, StandardManifest
 
 _POS_RE = re.compile(r"\((art|prep|v|n|adj|adv|conj|pron|prefix)\),?", re.IGNORECASE)
 _ALTERNATIVE_RE = re.compile(
@@ -41,52 +31,6 @@ _POS_NAMES = {
     "prefix": "prefix",
 }
 _SOURCE_FILE = "ASD-STE100_ISSUE9.txt"
-_PUBLISHED_COUNTS = {
-    "numbered_rules": 53,
-    "general_rules": 8,
-    "approved_words": 875,
-    "unapproved_words": 1274,
-}
-
-# These scopes describe only what the deterministic implementation proves.
-_CHECKERS: dict[str, tuple[str, ...]] = {
-    "1.1": ("vocabulary",),
-    "1.2": ("approved_part_of_speech",),
-    "1.4": ("approved_form",),
-    "1.6": ("unapproved_vocabulary",),
-    "1.7": ("technical_noun_as_verb",),
-    "1.8": ("project_terminology",),
-    "1.11": ("terminology_consistency",),
-    "1.13": ("technical_verb_as_noun",),
-    "1.14": ("american_spelling",),
-    "2.1": ("multiword_term_length",),
-    "3.1": ("approved_form",),
-    "3.2": ("verb_form",),
-    "3.4": ("complex_verb",),
-    "3.5": ("ing_form",),
-    "3.6": ("passive_voice",),
-    "4.2": ("contraction",),
-    "4.3": ("vertical_list",),
-    "5.1": ("procedure_sentence_length",),
-    "5.2": ("instruction_count",),
-    "5.3": ("imperative_instruction",),
-    "5.4": ("condition_comma",),
-    "5.5": ("note_instruction",),
-    "6.3": ("descriptive_sentence_length",),
-    "6.6": ("paragraph_sentence_count",),
-    "7.2": ("safety_opening",),
-    "8.1": ("semicolon",),
-    "8.3": ("balanced_parentheses",),
-    "8.4": ("word_count",),
-    "8.5": ("word_count",),
-    "8.6": ("word_count",),
-    "8.7": ("word_count",),
-    "9.4": ("terminology_consistency",),
-    "GR-1": ("omitted_that",),
-    "GR-6": ("latin_abbreviation",),
-    "GR-7": ("gendered_term",),
-}
-_FULL_RULES = frozenset({"5.1", "6.3", "6.6", "8.1", "8.4", "8.5", "8.7"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -300,10 +244,8 @@ def build_dictionary(text: str) -> tuple[DictionaryEntry, ...]:
             qualifier=qualifier,
             status=row.status,
             parts_of_speech=(row.part_of_speech,),
-            approved_meanings=(),
             approved_forms=_forms(row, aliases),
             alternatives=_alternatives(row),
-            review_state=ReviewState.REVIEWED,
             source=_source(digest, row.page, row=f"dictionary-row-{row_number}"),
         )
         key = (entry.status, entry.word, row.part_of_speech)
@@ -317,105 +259,9 @@ def build_dictionary(text: str) -> tuple[DictionaryEntry, ...]:
 
 
 def build_rules(text: str) -> tuple[RuleRecord, ...]:
-    """Promote exact section-summary requirements into deterministic coverage records."""
+    """Extract rule and general-recommendation summaries from Issue 9."""
 
-    candidates = extract_rule_candidates(text, source_name=_SOURCE_FILE)
-    return tuple(
-        RuleRecord(
-            rule_id=item.rule_id,
-            requirement=item.requirement,
-            treatment=(
-                RuleTreatment.DETERMINISTIC
-                if item.rule_id in _CHECKERS
-                else RuleTreatment.HUMAN_REVIEW
-            ),
-            review_state=ReviewState.REVIEWED,
-            source=item.source,
-            notes=(
-                "The checker covers the mechanically decidable clause recorded in conformance.json."
-                if item.rule_id in _CHECKERS
-                else "The requirement needs human judgment."
-            ),
-        )
-        for item in candidates
-    )
-
-
-def build_conformance(rules: tuple[RuleRecord, ...]) -> tuple[ConformanceRecord, ...]:
-    records: list[ConformanceRecord] = []
-    for rule in rules:
-        checkers = _CHECKERS.get(rule.rule_id, ())
-        scope: Literal["full", "partial", "none"] = (
-            "full" if rule.rule_id in _FULL_RULES else "partial" if checkers else "none"
-        )
-        records.append(
-            ConformanceRecord(
-                rule_id=rule.rule_id,
-                deterministic_checkers=checkers,
-                coverage_scope=scope,
-                release_gate="blocking" if scope == "full" else "human_review",
-                reason=(
-                    "The complete mechanical requirement is checked."
-                    if scope == "full"
-                    else (
-                        "The named mechanical clause is checked; "
-                        "remaining interpretation needs review."
-                    )
-                    if scope == "partial"
-                    else "The requirement is contextual and needs human review."
-                ),
-            )
-        )
-    return tuple(records)
-
-
-def build_examples(digest: str) -> tuple[StandardExample, ...]:
-    examples = (
-        ("semicolon-negative", "8.1", "Open the valve; then start the pump.", "negative", 126),
-        ("semicolon-positive", "8.1", "Open the valve. Then start the pump.", "positive", 126),
-        ("contraction-negative", "4.2", "Don't open the access panel.", "negative", 75),
-        ("contraction-positive", "4.2", "Do not open the access panel.", "positive", 75),
-        ("general-that-negative", "GR-1", "Make sure the valve is open.", "negative", 118),
-        ("general-that-positive", "GR-1", "Make sure that the valve is open.", "positive", 118),
-        (
-            "gendered-negative",
-            "GR-7",
-            "The operator must put his tools in the box.",
-            "negative",
-            121,
-        ),
-        (
-            "gendered-positive",
-            "GR-7",
-            "Operators must put their tools in the box.",
-            "positive",
-            121,
-        ),
-        ("latin-negative", "GR-6", "Use the applicable tool, e.g. a wrench.", "negative", 120),
-        (
-            "latin-positive",
-            "GR-6",
-            "Use the applicable tool, for example, a wrench.",
-            "positive",
-            120,
-        ),
-        ("procedure-positive", "5.1", "1. Open the access panel.", "positive", 83),
-        ("note-positive", "5.5", "NOTE: The valve stays open during the test.", "positive", 88),
-        ("note-negative", "5.5", "NOTE: Open the valve before the test.", "negative", 88),
-        ("parentheses-positive", "8.5", "Install the bolts (items 2 and 3).", "positive", 125),
-        ("list-positive", "8.4", "Use these items:\n1. A wrench.\n2. A cloth.", "positive", 124),
-    )
-    return tuple(
-        StandardExample(
-            example_id=example_id,
-            rule_ids=(rule_id,),
-            text=text,
-            label=label,
-            review_state=ReviewState.REVIEWED,
-            source=_source(digest, page),
-        )
-        for example_id, rule_id, text, label, page in examples
-    )
+    return extract_rule_candidates(text, source_name=_SOURCE_FILE)
 
 
 def _write_models(path: Path, records: tuple[BaseModel, ...]) -> None:
@@ -434,40 +280,23 @@ def write_runtime_pack(source: Path, output: Path) -> StandardManifest:
     digest = sha256_digest(text.encode("utf-8"))
     rules = build_rules(text)
     dictionary = build_dictionary(text)
-    examples = build_examples(digest)
-    conformance = build_conformance(rules)
     output.mkdir(parents=True, exist_ok=True)
+    for stale_name in ("conformance.json", "examples.json"):
+        (output / stale_name).unlink(missing_ok=True)
     (output / "__init__.py").write_text(
         '"""Bundled ASD-STE100 Issue 9 structured data."""\n', encoding="utf-8"
     )
     artifacts: dict[str, tuple[BaseModel, ...]] = {
         "rules.json": rules,
         "dictionary.json": dictionary,
-        "examples.json": examples,
-        "conformance.json": conformance,
     }
     for name, records in artifacts.items():
         _write_models(output / name, records)
-    actual_counts = ExpectedCounts(
-        numbered_rules=sum(not item.rule_id.startswith("GR-") for item in rules),
-        general_rules=sum(item.rule_id.startswith("GR-") for item in rules),
-        approved_words=sum(item.status == "approved" for item in dictionary),
-        unapproved_words=sum(item.status == "unapproved" for item in dictionary),
-    )
     manifest = StandardManifest(
         format_version="1",
         standard_id="ASD-STE100",
         issue=9,
-        review_state=ReviewState.REVIEWED,
         source=_source(digest, 1),
-        expected_counts=actual_counts,
-        published_counts=ExpectedCounts(**_PUBLISHED_COUNTS),
-        count_reconciliation=(
-            f"The fixed-column source table yields {actual_counts.approved_words} approved "
-            f"and {actual_counts.unapproved_words} unapproved unique "
-            "status/headword/part-of-speech rows after wrapped headwords are repaired. "
-            "All source-traceable rows are retained; no row is deleted to force the printed totals."
-        ),
         file_digests={name: _file_digest(output / name) for name in artifacts},
     )
     (output / "standard.json").write_text(

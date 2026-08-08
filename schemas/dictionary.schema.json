@@ -19,14 +19,6 @@
           "title": "Approved Forms",
           "type": "array"
         },
-        "approved_meanings": {
-          "default": [],
-          "items": {
-            "$ref": "#/$defs/DictionaryMeaning"
-          },
-          "title": "Approved Meanings",
-          "type": "array"
-        },
         "entry_id": {
           "pattern": "^[a-z0-9][a-z0-9._-]*$",
           "title": "Entry Id",
@@ -52,9 +44,6 @@
           "default": null,
           "title": "Qualifier"
         },
-        "review_state": {
-          "$ref": "#/$defs/ReviewState"
-        },
         "source": {
           "$ref": "#/$defs/SourceLocation"
         },
@@ -77,49 +66,10 @@
         "word",
         "status",
         "parts_of_speech",
-        "review_state",
         "source"
       ],
       "title": "DictionaryEntry",
       "type": "object"
-    },
-    "DictionaryMeaning": {
-      "additionalProperties": false,
-      "properties": {
-        "meaning_id": {
-          "minLength": 1,
-          "title": "Meaning Id",
-          "type": "string"
-        },
-        "rule_ids": {
-          "default": [],
-          "items": {
-            "pattern": "^(?:[1-9]\\d*\\.[1-9]\\d*|GR-[1-9]\\d*)$",
-            "type": "string"
-          },
-          "title": "Rule Ids",
-          "type": "array"
-        },
-        "text": {
-          "minLength": 1,
-          "title": "Text",
-          "type": "string"
-        }
-      },
-      "required": [
-        "meaning_id",
-        "text"
-      ],
-      "title": "DictionaryMeaning",
-      "type": "object"
-    },
-    "ReviewState": {
-      "enum": [
-        "draft",
-        "reviewed"
-      ],
-      "title": "ReviewState",
-      "type": "string"
     },
     "SourceLocation": {
       "additionalProperties": false,

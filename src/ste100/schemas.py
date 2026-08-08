@@ -10,11 +10,9 @@ from pydantic import TypeAdapter
 
 from ste100.models import (
     AnalysisResult,
-    ConformanceRecord,
     DictionaryEntry,
     ProjectDictionary,
     RuleRecord,
-    StandardExample,
     StandardManifest,
 )
 
@@ -22,8 +20,6 @@ _SCHEMA_TYPES: dict[str, Any] = {
     "standard.schema.json": StandardManifest,
     "rules.schema.json": list[RuleRecord],
     "dictionary.schema.json": list[DictionaryEntry],
-    "examples.schema.json": list[StandardExample],
-    "conformance.schema.json": list[ConformanceRecord],
     "project-dictionary.schema.json": ProjectDictionary,
     "analysis.schema.json": AnalysisResult,
 }
@@ -33,6 +29,9 @@ def generate_schemas(output_dir: Path) -> tuple[Path, ...]:
     """Write deterministic Draft 2020-12 JSON Schema documents."""
 
     output_dir.mkdir(parents=True, exist_ok=True)
+    for stale in output_dir.glob("*.schema.json"):
+        if stale.name not in _SCHEMA_TYPES:
+            stale.unlink()
     written: list[Path] = []
     for filename, model_type in sorted(_SCHEMA_TYPES.items()):
         schema = TypeAdapter(model_type).json_schema()

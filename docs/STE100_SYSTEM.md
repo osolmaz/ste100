@@ -1,159 +1,160 @@
-# Deterministic STE100 checker
+# STE100 checker
 
-This specification defines an offline checker for mechanically decidable parts of ASD-STE100 Issue 9. The checker uses a bundled standard pack, exact source offsets, project terminology, and an optional pinned spaCy pipeline.
+This document defines the `ste100` result format, extracted standard data, and check boundaries.
 
-The checker never certifies official compliance. It gives conclusive results only for the clauses named in its coverage matrix.
+## Purpose
 
-## Runtime flow
+The checker finds issues that its code can establish from the supplied text, extracted Issue 9 data, and optional project terms. It runs offline and returns exact UTF-8 byte ranges.
 
-```text
-UTF-8 text
-    |
-lossless document parser
-    |
-bundled Issue 9 pack + optional project dictionary
-    |
-deterministic checks + optional pinned spaCy evidence
-    |
-findings and 61 per-rule coverage records
-```
+The checker does not determine full ASD-STE100 compliance. It does not return a result for a rule when the available evidence cannot establish an issue.
 
-The runtime does not download data, models, code, or standards. The same text, configuration, pack, code revision, and spaCy revision produce the same result.
+## Result
 
-## Bundled standard pack
+`AnalysisResult` contains:
 
-The installed pack is under `ste100.data.issue9` and contains:
+- `standard_id`: `ASD-STE100`
+- `standard_issue`: `9`
+- `standard_digest`: SHA-256 digest of the source text used to build the extracted data
+- `passed`: whether the implemented checks found no issue
+- `findings`: issues found by the implemented checks
+
+`passed` is `true` exactly when `findings` is empty. It describes this tool run only.
+
+A finding contains:
+
+- `rule_ids`: one or more official Issue 9 rule numbers
+- `message`: the condition found by the check
+- `byte_range`: half-open UTF-8 byte offsets
+- `excerpt`: the exact text at that range
+
+One byte range produces one finding. If two checks find conditions at the same range, the result combines their rule IDs and messages.
+
+The result has no confidence, severity, coverage, applicability, review, or compliance fields.
+
+## Vocabulary
+
+The checker uses the extracted dictionary and an optional project dictionary.
+
+A word or phrase passes the vocabulary check when one of these conditions is true:
+
+- the extracted dictionary lists it as approved
+- the supplied project dictionary contains it
+- a longer approved dictionary expression contains it
+- it is protected content such as code, a URL, an identifier, a number, or a unit value
+
+A word listed as unapproved produces one finding for Rules 1.1 and 1.6. The finding includes extracted alternatives when available.
+
+A word with both approved and unapproved entries produces one finding unless optional linguistic evidence selects an approved part of speech and form.
+
+A word absent from the extracted dictionary and project dictionary produces one Rule 1.1 finding. The checker does not guess whether the word could become an approved project term.
+
+## Project dictionary
+
+A project dictionary is caller-owned configuration. It is not an ASD file format.
+
+Each term has:
+
+- `term`
+- `category`: `technical_noun` or `technical_verb`
+- optional `approved_forms`
+- `meaning`
+- `source`
+
+The validator rejects malformed entries, one form assigned to different terms, and technical nouns longer than three words. Matching is case-insensitive and uses the longest term first.
+
+## Implemented checks
+
+The default checker can report these conditions:
+
+- approved, unapproved, mixed-status, and missing vocabulary
+- selected British spellings listed in the checker's fixed American-spelling map
+- contractions
+- semicolons
+- unmatched parentheses
+- a missing colon before a detected vertical list
+- procedure sentences over 20 words when grouped-element counting is not ambiguous
+- descriptive sentences over 25 words when grouped-element counting is not ambiguous
+- descriptive paragraphs over six sentences
+
+The optional pinned spaCy pipeline can also report:
+
+- a dictionary word used with an unapproved part of speech
+- a verb or adjective form absent from the extracted approved forms
+- a project technical noun used as a verb
+- a project technical verb used as a noun
+- a procedure step whose parsed root is not imperative
+- passive voice in a procedure
+- an instruction in a note
+- a warning or caution whose parse has neither a command nor an initial condition
+
+The spaCy checks run only when the caller uses `--spacy`. The checker suppresses a linguistic sentence check when protected code removes required parse evidence.
+
+## Unsupported checks
+
+The checker emits nothing for conditions it cannot establish. This includes:
+
+- word meaning
+- whether an absent word qualifies as a technical noun or technical verb
+- topic structure and paragraph order
+- ambiguity and ease of comprehension
+- simultaneous actions
+- general recommendations
+- descriptive passive voice
+- uncertain `-ing` uses
+- phrasal-verb meaning
+- a missing comma when the checker cannot establish both the condition and instruction
+
+`ste100 explain` still returns the extracted text for all 53 numbered rules and eight general recommendations.
+
+## Protected content
+
+The checker protects:
+
+- caller-approved project terms
+- URLs
+- fenced and inline code
+- identifiers with separators
+- numbers and attached units
+
+Protected values do not produce vocabulary, spelling, contraction, semicolon, or linguistic findings. Numbers still count as words where Issue 9 requires that count. Code does not affect structural checks.
+
+## Document model
+
+Input is UTF-8 text. The parser preserves:
+
+- original text
+- line endings
+- half-open UTF-8 byte ranges
+- paragraphs
+- procedure steps
+- notes
+- warnings
+- cautions
+- vertical lists
+- sentences and tokens
+
+The checker does not normalize the source text before it creates findings.
+
+## Extracted Issue 9 data
+
+The runtime data directory contains:
 
 ```text
 standard.json
 rules.json
 dictionary.json
-examples.json
-conformance.json
 ```
 
-`standard.json` records the source digest, Issue 9 identifier, review state, artifact digests, extracted counts, published counts, and a reconciliation note. Runtime loading checks every digest and rejects missing, extra, malformed, duplicate, unreviewed, or path-escaping artifacts.
+`standard.json` identifies the source and stores SHA-256 digests for the two extracted artifacts.
 
-Issue 9 prints totals of 875 approved and 1,274 unapproved words. The source table parser produces 878 approved and 1,315 unapproved part-of-speech rows after repairing wrapped headwords. The runtime keeps valid source rows instead of deleting entries to force count agreement. Pack validation reports the difference as a warning and checks that the manifest agrees with the artifacts.
+`rules.json` contains the official rule or general-recommendation ID, extracted summary text, and source location.
 
-Each dictionary entry contains:
+`dictionary.json` contains extracted headwords, status, part of speech, forms, alternatives, qualifiers, and source locations.
 
-- a stable ID
-- normalized headword
-- approved or unapproved status
-- part of speech
-- listed forms
-- approved alternatives when the table column is unambiguous
-- source page, row ID, and source digest
-- reviewed state
+This is an internal extraction from the checked-in Issue 9 text export. It is not an official structured dictionary. Pack validation checks schema validity, file digests, the 61-entry rule catalog, duplicate dictionary keys, and source digests. It does not label the extraction as approved or reviewed.
 
-An entry key consists of status, headword, and parts of speech. Duplicate keys are invalid. A headword can have approved and unapproved uses when Issue 9 distinguishes meaning or part of speech. Without sufficient linguistic evidence, the checker sends that use to human review. Approved meanings are not copied into the runtime pack because fixed-column text extraction can mix them with the example column; Rule 1.3 therefore stays in human review.
+## Determinism
 
-## Document model
+For fixed input bytes, extracted data, project terms, and optional spaCy version, the checker returns the same ordered result.
 
-The parser preserves the input text and uses half-open UTF-8 byte ranges. It identifies:
-
-- paragraphs
-- sentences
-- procedure steps
-- vertical-list items
-- notes
-- cautions
-- warnings
-- tokens and punctuation
-
-The word counter treats parenthesized text, quoted text, numbers with units, URLs, identifiers, and hyphenated units as one element where Issue 9 requires it. Parenthesized prose counts as one word in its enclosing sentence and as a separate sentence for its own length check. A colon before a vertical list ends the introductory sentence for word counting.
-
-The applicable interface rejects over-limit text and does not truncate it. Findings preserve the exact source excerpt at their byte range.
-
-## Project dictionary
-
-A project dictionary supplies approved technical nouns and verbs. Validation rejects:
-
-- empty or malformed entries
-- one form assigned to different terms
-- technical nouns longer than three words
-
-Matching is case-insensitive and uses the longest approved term first. A matched project term is not reported as unknown vocabulary. Project terminology can approve a general word for a technical category even when the standard dictionary does not approve that part of speech; dedicated noun-versus-verb checks still apply.
-
-## Deterministic checks
-
-The conformance matrix contains all 53 numbered rules and eight general recommendations. Each record has `full`, `partial`, or `none` scope.
-
-Full scope means the complete mechanical requirement is checked. Partial scope means only the named clause is checked and the remaining requirement stays in human review. None means the complete requirement needs judgment.
-
-The runtime includes checks for:
-
-- approved, unapproved, ambiguous, and unknown vocabulary
-- listed word forms and parts of speech when spaCy evidence is available
-- configured technical nouns and verbs
-- selected American English spellings
-- contractions
-- selected complex verb, `-ing`, and passive constructions
-- procedure imperatives and possible multiple actions
-- note instructions
-- sentence and paragraph limits
-- condition commas and vertical-list colons
-- semicolons and balanced parentheses
-- Issue 9 word-count rules
-- selected general recommendations for `that`, Latin abbreviations, and inclusive wording
-
-A checker abstains when its evidence cannot prove a violation. Unapproved nouns and verbs remain in human review until configured terminology or linguistic context resolves their use because they can be technical terms. Absence of a partial-check finding never becomes a pass for the complete rule.
-
-## Optional spaCy checks
-
-The optional analyzer is pinned to spaCy 3.8.11 and `en_core_web_sm` 3.8.0. It supplies tokenization, lemmas, part-of-speech tags, morphology, dependency relations, and sentence boundaries. The CLI does not accept another model name or path, and startup rejects a different model version or a pipeline without both dependency parsing and part-of-speech analysis.
-
-spaCy does not decide compliance. Checker code applies explicit rules to its evidence. Ambiguous cases produce `human_review`. Examples include descriptive passive voice with an unknown agent, an `-ing` form that can be a technical noun, and two procedure actions that can occur at the same time.
-
-The adapter merges list markers and `NOTE:`, `WARNING:`, and `CAUTION:` labels with the sentence that follows. Tests use manually verified sentences for imperative, passive, note, safety, word-form, and abstention behavior.
-
-The default runtime works without spaCy. Rules that require linguistic evidence remain in human review when no analyzer is supplied.
-
-## Findings
-
-A finding contains:
-
-- stable finding ID
-- Issue 9 rule ID
-- `violation` or `human_review`
-- checker ID
-- message
-- optional UTF-8 byte range and exact excerpt
-
-Findings from deterministic clauses are conclusive only when their kind is `violation`. Human-review findings explain the uncertainty. General recommendations can only produce human-review findings and never change the process exit status.
-
-## Coverage
-
-Every analysis returns exactly 61 coverage records with one of these states:
-
-- `passed`
-- `failed`
-- `human_review`
-- `not_applicable`
-
-A full check can pass when it ran and found no violation. A partial check cannot pass the complete rule. Rules with no mechanical treatment always require human review.
-
-## CLI behavior
-
-`ste100 analyze` uses the bundled pack unless `--standard-pack` selects another validated local pack. JSON output includes the source digest so integrations can identify the exact standard data.
-
-Exit codes are:
-
-- `0`: no conclusive violation
-- `1`: one or more conclusive violations
-- `2`: invalid input, pack, project dictionary, or spaCy configuration
-
-Raw source text is not logged by the library. Text output prints only the finding excerpts that the caller asked it to analyze.
-
-## Tests and private data
-
-Tests include standard-derived examples, synthetic boundaries, malformed input, Unicode, project terms, values, identifiers, URLs, code, and sanitized response-style patterns.
-
-The private response-style corpus is never committed. A local script runs aggregate regression checks over it without printing prose, paths, session IDs, timestamps, or model names. Public fixtures are newly written synthetic sentences that contain no private provenance.
-
-## Security and licensing
-
-Artifact paths must remain inside the selected pack. Pack and source digests use SHA-256. JSON contracts reject undeclared fields.
-
-The repository's MIT license covers original code and documentation. ASD source material retains the terms in [`../NOTICE`](../NOTICE).
+Runtime checks do not use network calls, model APIs, learned custom detectors, or generated rewrites. The optional spaCy package and model must be installed before offline use.

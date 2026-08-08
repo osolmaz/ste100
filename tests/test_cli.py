@@ -18,17 +18,33 @@ def test_cli_analyze_json_and_text(
 
     assert main(["analyze", str(source), "--format", "json"]) == 1
     payload = json.loads(capsys.readouterr().out)
-    assert payload["official_compliance_claimed"] is False
-    rule_ids = {item["rule_id"] for item in payload["findings"]}
+    assert payload["passed"] is False
+    rule_ids = {rule_id for item in payload["findings"] for rule_id in item["rule_ids"]}
     assert {"4.2", "8.1"} <= rule_ids
+    assert "coverage" not in payload
+    assert "official_compliance_claimed" not in payload
+    assert "human_review" not in json.dumps(payload)
 
     assert main(["analyze", str(source)]) == 1
     output = capsys.readouterr().out
-    assert "does not certify" in output
-    assert "Coverage:" in output
+    assert output.startswith("FAIL\n")
+    assert "Coverage" not in output
+    assert "review" not in output.casefold()
 
 
-def test_cli_validates_pack_and_explains_bundled_rule(
+def test_cli_passes_when_no_implemented_check_finds_an_issue(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    source = tmp_path / "input.txt"
+    source.write_text("Continue.", encoding="utf-8")
+    assert main(["analyze", str(source), "--format", "json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["passed"] is True
+    assert payload["findings"] == []
+
+
+def test_cli_validates_pack_and_explains_source_rule(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -38,20 +54,20 @@ def test_cli_validates_pack_and_explains_bundled_rule(
 
     assert main(["explain", "8.1"]) == 0
     payload = json.loads(capsys.readouterr().out)
-    assert payload["rule"]["rule_id"] == "8.1"
-    assert "semicolon" in payload["rule"]["requirement"]
-    assert payload["rule"]["review_state"] == "reviewed"
-    assert payload["conformance"]["coverage_scope"] == "full"
+    assert payload["rule_id"] == "8.1"
+    assert "semicolon" in payload["requirement"]
+    assert "coverage" not in payload
+    assert "review" not in json.dumps(payload)
 
     assert main(["explain", "8.1", "--standard-pack", str(pack)]) == 0
-    reviewed = json.loads(capsys.readouterr().out)
-    assert reviewed["rule"]["requirement"] == "Do not use semicolons."
+    extracted = json.loads(capsys.readouterr().out)
+    assert extracted["requirement"] == "Do not use semicolons."
 
     assert main(["explain", "99.1"]) == 1
     assert "Unknown rule" in capsys.readouterr().err
 
 
-def test_cli_analyzes_with_reviewed_pack_and_project_dictionary(
+def test_cli_analyzes_with_pack_and_project_dictionary(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
@@ -90,7 +106,9 @@ def test_cli_analyzes_with_reviewed_pack_and_project_dictionary(
         )
         == 0
     )
-    assert json.loads(capsys.readouterr().out)["findings"] == []
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["passed"] is True
+    assert payload["findings"] == []
 
 
 def test_cli_rejects_invalid_project_dictionary(
@@ -103,18 +121,6 @@ def test_cli_rejects_invalid_project_dictionary(
     assert json.loads(capsys.readouterr().out)["valid"] is False
 
 
-def test_cli_general_recommendation_does_not_fail_analysis(
-    tmp_path: Path,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    source = tmp_path / "recommendation.txt"
-    source.write_text("Use e.g. in this example.", encoding="utf-8")
-    assert main(["analyze", str(source), "--format", "json"]) == 0
-    payload = json.loads(capsys.readouterr().out)
-    finding = next(item for item in payload["findings"] if item["rule_id"] == "GR-6")
-    assert finding["kind"] == "human_review"
-
-
 def test_cli_runs_pinned_spacy_checks(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -123,18 +129,20 @@ def test_cli_runs_pinned_spacy_checks(
     source.write_text("1. The access panel is opened.", encoding="utf-8")
     assert main(["analyze", str(source), "--spacy", "--format", "json"]) == 1
     payload = json.loads(capsys.readouterr().out)
-    assert {item["rule_id"] for item in payload["findings"]} >= {"3.6", "5.3"}
+    rule_ids = {rule_id for item in payload["findings"] for rule_id in item["rule_ids"]}
+    assert {"3.6", "5.3"} <= rule_ids
 
 
-def test_cli_extracts_a_valid_runtime_pack(
+def test_cli_extracts_valid_runtime_data(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     output = tmp_path / "issue9"
     assert main(["extract-standard", "docs/ASD-STE100_ISSUE9.txt", str(output)]) == 0
     manifest = json.loads(capsys.readouterr().out)
-    assert manifest["review_state"] == "reviewed"
-    assert manifest["expected_counts"]["approved_words"] == 878
+    assert set(manifest["file_digests"]) == {"rules.json", "dictionary.json"}
+    assert "review_state" not in manifest
+    assert "coverage" not in json.dumps(manifest)
     assert main(["validate-standard", str(output)]) == 0
     assert json.loads(capsys.readouterr().out)["valid"] is True
 

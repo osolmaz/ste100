@@ -8,9 +8,7 @@ import zipfile
 from pathlib import Path
 
 _REQUIRED = {
-    "ste100/data/issue9/conformance.json",
     "ste100/data/issue9/dictionary.json",
-    "ste100/data/issue9/examples.json",
     "ste100/data/issue9/rules.json",
     "ste100/data/issue9/standard.json",
 }
@@ -37,6 +35,14 @@ def main() -> int:
         forbidden = sorted(_FORBIDDEN_MODULES & names)
         if missing or forbidden:
             raise RuntimeError(f"wheel contents differ; missing={missing}, forbidden={forbidden}")
+        if any(
+            name in names
+            for name in (
+                "ste100/data/issue9/conformance.json",
+                "ste100/data/issue9/examples.json",
+            )
+        ):
+            raise RuntimeError("wheel contains removed result-model artifacts")
         if archive.getinfo("ste100/data/issue9/dictionary.json").file_size < 1_000_000:
             raise RuntimeError("bundled dictionary is unexpectedly small")
     print(f"wheel check passed: {wheels[0]}")
