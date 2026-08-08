@@ -8,7 +8,7 @@ from ste100.checker import analyze
 from ste100.linguistics import SpacyAnalyzer
 from ste100.models import FindingKind
 
-_SPACY = SpacyAnalyzer("en_core_web_sm")
+_SPACY = SpacyAnalyzer()
 
 
 def _fixtures() -> list[dict[str, object]]:

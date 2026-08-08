@@ -34,7 +34,7 @@ def test_bundled_dictionary_is_used_by_default() -> None:
     finding = next(
         item for item in result.findings if item.rule_id == "1.1" and item.excerpt == "Utilize"
     )
-    assert finding.kind is FindingKind.VIOLATION
+    assert finding.kind is FindingKind.HUMAN_REVIEW
     assert len(result.coverage) == 61
     assert result.standard_digest == load_bundled_standard().manifest.source.source_digest
 
@@ -47,7 +47,7 @@ def test_vocabulary_respects_project_terms(standard_pack: StandardPack) -> None:
     )
     vocabulary = [item for item in result.findings if item.rule_id == "1.1"]
     assert [(item.kind, item.excerpt) for item in vocabulary] == [
-        (FindingKind.VIOLATION, "Utilize")
+        (FindingKind.HUMAN_REVIEW, "Utilize")
     ]
     assert "Use: use." in vocabulary[0].message
 
@@ -58,6 +58,25 @@ def test_unknown_vocabulary_requests_human_review() -> None:
     coverage = next(item for item in result.coverage if item.rule_id == "1.1")
     assert finding.kind is FindingKind.HUMAN_REVIEW
     assert coverage.status is CoverageStatus.HUMAN_REVIEW
+
+
+def test_unapproved_noun_can_be_project_terminology() -> None:
+    finding = next(
+        item
+        for item in analyze("Check the backup pump.").findings
+        if item.rule_id == "1.1" and item.excerpt == "backup"
+    )
+    assert finding.kind is FindingKind.HUMAN_REVIEW
+
+
+def test_hyphenated_dictionary_headword_is_checked() -> None:
+    finding = next(
+        item
+        for item in analyze("Air-dry the filter.").findings
+        if item.rule_id == "1.1" and item.excerpt == "Air-dry"
+    )
+    assert finding.kind is FindingKind.HUMAN_REVIEW
+    assert "listed as unapproved" in finding.message
 
 
 def test_word_with_approved_and_unapproved_uses_requests_review() -> None:

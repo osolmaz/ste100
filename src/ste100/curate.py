@@ -214,7 +214,7 @@ def _forms(row: _DictionaryRow, aliases: tuple[str, ...]) -> tuple[str, ...]:
         if not cell or _POS_RE.search(cell):
             continue
         for item in cell.split(","):
-            form = item.strip().rstrip(",").replace("-", "")
+            form = item.strip().strip("(),")
             if form and _is_approved_headword(form):
                 forms.append(form.casefold())
     return tuple(dict.fromkeys(forms))
