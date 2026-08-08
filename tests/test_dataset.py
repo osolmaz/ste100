@@ -120,6 +120,29 @@ def test_dataset_allows_repeated_protected_value_when_count_and_order_match() ->
     assert validate_dataset((record,)).valid
 
 
+def test_dataset_distinguishes_overlapping_protected_values() -> None:
+    ten = ProtectedSpan(
+        span_id="span_3333333333333333",
+        kind="number",
+        byte_range=ByteRange(start=0, end=2),
+        text_digest=_digest("10"),
+    )
+    hundred = ProtectedSpan(
+        span_id="span_4444444444444444",
+        kind="number",
+        byte_range=ByteRange(start=3, end=6),
+        text_digest=_digest("100"),
+    )
+    record = _record(
+        source_kind="technical_document",
+        source_id="overlap",
+        text="10 100",
+        protected_spans=(ten, hundred),
+        target_text="Keep 10 and 100.",
+    )
+    assert validate_dataset((record,)).valid
+
+
 def test_dataset_detects_group_source_family_time_and_text_leakage() -> None:
     train = _record(source_kind="technical_document", source_id="doc", text="Same text.")
     test = _record(
@@ -236,6 +259,26 @@ def test_dataset_rejects_missing_parent_and_reordered_protected_values() -> None
     )
     codes = {issue.code for issue in validate_dataset((record,)).issues}
     assert {"missing_parent", "protected_order"}.issubset(codes)
+
+
+def test_synthetic_child_must_remain_in_parent_split() -> None:
+    parent = _record(
+        source_kind="standard_example",
+        source_id="train-parent",
+        text="Clean source.",
+        split="train",
+        group="parent-group",
+    )
+    child = _record(
+        source_kind="synthetic",
+        source_id="test-child",
+        text="Generated child.",
+        split="test",
+        group="child-group",
+        parent_record_ids=(parent.record_id,),
+    )
+    codes = {issue.code for issue in validate_dataset((parent, child)).issues}
+    assert "synthetic_split_leakage" in codes
 
 
 def test_conversation_outcome_cannot_be_inferred_from_silence() -> None:

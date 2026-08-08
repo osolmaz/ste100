@@ -160,7 +160,7 @@ The initial vertical slice implements:
 - complete mechanical behavior for Rules 8.4, 8.5, and 8.7
 - partial Rule 8.6 handling for numbers, measurements, abbreviations, identifiers, and quoted text
 
-Rule 8.6 remains partial because unquoted titles, headings, labels, and multiword proper nouns need document context. It cannot return `passed` in the initial release.
+Rule 8.6 remains partial because unquoted titles, headings, labels, and multiword proper nouns need document context. It cannot return `passed` in the initial release. Rules 5.1 and 6.3 also remain partial in the conformance matrix because they depend on that grouping. An over-limit sentence with a possible grouped element returns `human_review` instead of a conclusive violation.
 
 The conformance matrix exposes every other rule even when no checker exists.
 

@@ -31,6 +31,15 @@ def test_sentence_splitter_does_not_split_common_abbreviations() -> None:
     ]
 
 
+def test_decimal_point_is_not_a_sentence_boundary() -> None:
+    text = "Set the pressure to 1.5 bar. Then continue."
+    ranges = sentence_ranges(text)
+    assert [text[start:end] for start, end in ranges] == [
+        "Set the pressure to 1.5 bar.",
+        "Then continue.",
+    ]
+
+
 def test_word_count_exceptions_are_single_tokens() -> None:
     text = 'Move the pre-load unit (item 4) by 10 mm to "ZONE A" at https://example.com.'
     tokens = tokenize(text)
@@ -40,6 +49,16 @@ def test_word_count_exceptions_are_single_tokens() -> None:
     assert "10 mm" in values
     assert '"ZONE A"' in values
     assert "https://example.com." in values
+
+
+def test_colon_terminates_intro_before_vertical_list() -> None:
+    text = "Use these items:\n- First item.\n- Second item."
+    document = parse_document(text)
+    assert [sentence.text for sentence in document.sentences] == [
+        "Use these items:",
+        "- First item.",
+        "- Second item.",
+    ]
 
 
 def test_parenthetical_prose_is_also_a_separate_sentence() -> None:

@@ -228,13 +228,13 @@
     "rule_id": "4.5"
   },
   {
-    "coverage_scope": "full",
+    "coverage_scope": "partial",
     "deterministic_checkers": [
       "procedure_sentence_length"
     ],
     "learned_role": null,
-    "reason": "The complete mechanically testable requirement is implemented.",
-    "release_gate": "blocking",
+    "reason": "Only the conclusive mechanical subset is implemented.",
+    "release_gate": "report_only",
     "rule_id": "5.1"
   },
   {
@@ -286,13 +286,13 @@
     "rule_id": "6.2"
   },
   {
-    "coverage_scope": "full",
+    "coverage_scope": "partial",
     "deterministic_checkers": [
       "descriptive_sentence_length"
     ],
     "learned_role": null,
-    "reason": "The complete mechanically testable requirement is implemented.",
-    "release_gate": "blocking",
+    "reason": "Only the conclusive mechanical subset is implemented.",
+    "release_gate": "report_only",
     "rule_id": "6.3"
   },
   {

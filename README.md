@@ -7,7 +7,7 @@ It does not certify official ASD-STE100 compliance. Every analysis reports cover
 ## Current capabilities
 
 - Lossless document parsing with half-open UTF-8 byte offsets
-- Deterministic checks for semicolons, contractions, procedure and safety sentence length, paragraph length, and the mechanical parts of STE word counting
+- Deterministic checks for semicolons, contractions, paragraph length, and mechanical sentence counts, with Rule 8.6 grouping ambiguity sent to review
 - Reviewed standard-pack validation with digests, expected counts, references, and path-containment checks
 - Project terminology validation and longest-match term handling
 - Protected spans for terms, numbers, units, identifiers, URLs, code, and caller-supplied ranges

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 from collections import Counter, defaultdict
 from collections.abc import Iterable
 
@@ -111,28 +112,26 @@ def _check_target_values(
     originals: list[str],
     issues: list[ValidationIssue],
 ) -> None:
-    if record.target_text is None:
+    if record.target_text is None or not originals:
         return
-    expected = Counter(originals)
-    if any(record.target_text.count(value) != count for value, count in expected.items()):
+    alternatives = sorted(set(originals), key=lambda value: (-len(value), value))
+    pattern = re.compile("|".join(re.escape(value) for value in alternatives))
+    occurrences = [match.group() for match in pattern.finditer(record.target_text)]
+    if Counter(occurrences) != Counter(originals):
         _issue(
             issues,
             "protected_target",
             "target must preserve the count of each protected source value",
             record.record_id,
         )
-    cursor = 0
-    for original in originals:
-        position = record.target_text.find(original, cursor)
-        if position < 0:
-            _issue(
-                issues,
-                "protected_order",
-                "target changes the order of protected source values",
-                record.record_id,
-            )
-            return
-        cursor = position + len(original)
+        return
+    if occurrences != originals:
+        _issue(
+            issues,
+            "protected_order",
+            "target changes the order of protected source values",
+            record.record_id,
+        )
 
 
 def _check_record(record: DatasetRecord, issues: list[ValidationIssue]) -> None:
@@ -219,6 +218,13 @@ def _check_parents(
                         "synthetic parent must be a reviewed standard example "
                         "or adjudicated clean text"
                     ),
+                    record.record_id,
+                )
+            elif record.source_kind == "synthetic" and record.split.split != parent.split.split:
+                _issue(
+                    issues,
+                    "synthetic_split_leakage",
+                    "synthetic child and parent must use the same split",
                     record.record_id,
                 )
 

@@ -36,6 +36,9 @@ _CONTRACTION_RE = re.compile(
     re.IGNORECASE,
 )
 _LEXICAL_RE = re.compile(r"^[A-Za-z]+(?:'[A-Za-z]+)?$")
+_GROUPED_ELEMENT_RE = re.compile(
+    r"\b(?:[A-Z][a-z]+|[A-Z]{2,})(?:\s+(?:[A-Z][a-z]+|[A-Z]{2,})){1,}\b"
+)
 _RULE_COUNTS = {1: 14, 2: 2, 3: 7, 4: 5, 5: 5, 6: 6, 7: 3, 8: 7, 9: 4}
 _ALL_RULE_IDS = tuple(
     [
@@ -57,7 +60,7 @@ _CHECKER_BY_RULE = {
     "8.6": "word_count",
     "8.7": "word_count",
 }
-_FULL_RULES = frozenset({"5.1", "6.3", "6.6", "8.1", "8.4", "8.5", "8.7"})
+_FULL_RULES = frozenset({"6.6", "8.1", "8.4", "8.5", "8.7"})
 
 
 def _finding_id(rule_id: str, checker_id: str, byte_range: ByteRange | None, message: str) -> str:
@@ -178,18 +181,25 @@ def _sentence_limit_findings(
     label: str,
     maximum: int,
 ) -> list[Finding]:
-    return [
-        _finding(
-            document.text,
-            rule_id=rule_id,
-            checker_id=checker_id,
-            kind=FindingKind.VIOLATION,
-            message=f"{label} has {sentence.word_count} words; the maximum is {maximum}.",
-            byte_range=sentence.byte_range,
+    findings: list[Finding] = []
+    for sentence in block.sentences:
+        if sentence.word_count <= maximum:
+            continue
+        uncertain = _GROUPED_ELEMENT_RE.search(sentence.text) is not None
+        message = f"{label} has a mechanical count of {sentence.word_count}; maximum {maximum}."
+        if uncertain:
+            message += " Review possible Rule 8.6 grouped elements."
+        findings.append(
+            _finding(
+                document.text,
+                rule_id=rule_id,
+                checker_id=checker_id,
+                kind=FindingKind.HUMAN_REVIEW if uncertain else FindingKind.VIOLATION,
+                message=message,
+                byte_range=sentence.byte_range,
+            )
         )
-        for sentence in block.sentences
-        if sentence.word_count > maximum
-    ]
+    return findings
 
 
 def _paragraph_count_findings(document: Document, block: Block) -> list[Finding]:
