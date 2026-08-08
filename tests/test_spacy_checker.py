@@ -154,6 +154,8 @@ def test_project_term_exempts_generic_pos_checks_but_retains_category_check(
     verb_result = analyze("Use the tool.", project_dictionary=project, linguistic_analyzer=analyzer)
     misuse = next(finding for finding in verb_result.findings if finding.rule_id == "1.7")
     assert misuse.kind is FindingKind.VIOLATION
+    code_result = analyze("`Use`", project_dictionary=project, linguistic_analyzer=analyzer)
+    assert not [finding for finding in code_result.findings if finding.rule_id == "1.7"]
 
 
 def test_omitted_that_requires_a_finite_subordinate_clause(
