@@ -22,8 +22,8 @@ _WORD_RE = re.compile(
 _PROCEDURE_RE = re.compile(r"^\s*(?:\d+(?:\.\d+)*[.)]|[a-z][.)])\s+", re.IGNORECASE)
 _PAREN_RE = re.compile(r"\(([^()\n]+)\)")
 _SAFETY_LABEL_RE = re.compile(r"^\s*(?:WARNING|CAUTION):\s*", re.IGNORECASE)
-_VERTICAL_LIST_RE = re.compile(r":\s*\r?\n\s*(?:[-*•]|[A-Z][.)])\s+")
-_LIST_RE = re.compile(r"^\s*(?:[-*•]|[A-Z][.)])\s+")
+_VERTICAL_LIST_RE = re.compile(r":\s*\r?\n\s*(?:[-*•]|[A-Za-z][.)]|\d+(?:\.\d+)*[.)])\s+")
+_LIST_RE = re.compile(r"^\s*(?:[-*•]|[A-Za-z][.)]|\d+(?:\.\d+)*[.)])\s+")
 
 
 class BlockKind(StrEnum):

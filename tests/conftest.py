@@ -20,6 +20,7 @@ from ste100.models import (
     StandardExample,
     StandardManifest,
 )
+from ste100.rule_ids import ISSUE9_RULE_IDS
 from ste100.standard import StandardPack, load_standard_pack
 
 SOURCE_DIGEST = "sha256:" + "0" * 64
@@ -35,14 +36,6 @@ def _source(page: int = 1) -> SourceLocation:
 
 def _digest(path: Path) -> str:
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def _issue9_rule_ids() -> tuple[str, ...]:
-    counts = {1: 14, 2: 2, 3: 7, 4: 5, 5: 5, 6: 6, 7: 3, 8: 7, 9: 4}
-    numbered = [
-        f"{section}.{number}" for section, count in counts.items() for number in range(1, count + 1)
-    ]
-    return tuple(numbered + [f"GR-{number}" for number in range(1, 9)])
 
 
 def make_standard_pack(root: Path, *, review_state: ReviewState = ReviewState.REVIEWED) -> Path:
@@ -63,7 +56,7 @@ def make_standard_pack(root: Path, *, review_state: ReviewState = ReviewState.RE
             review_state=review_state,
             source=_source(),
         )
-        for rule_id in _issue9_rule_ids()
+        for rule_id in ISSUE9_RULE_IDS
     ]
     dictionary = [
         DictionaryEntry(
