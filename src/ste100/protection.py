@@ -5,12 +5,14 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass
+from itertools import pairwise
 from typing import Literal
 
 from ste100.document import char_to_byte_offsets, slice_bytes
 from ste100.models import ByteRange, ProjectDictionary, ProtectedSpan
 from ste100.terminology import TermMatcher
 
+_MAX_PROTECTED_SPANS = 10_000
 _CODE_RE = re.compile(r"```[\s\S]*?```|`[^`\n]+`")
 _URL_RE = re.compile(r"https?://[^\s<>]+")
 _NUMBER_RE = re.compile(r"(?<!\w)[+-]?\d+(?:[.,]\d+)?(?:\s*(?:°[CF]|%|[A-Za-z]{1,8}))?(?!\w)")
@@ -50,7 +52,7 @@ class ProtectedDocument:
     def restore(self, candidate: str) -> str:
         """Validate all sentinels and restore the exact protected source strings."""
 
-        pattern = re.compile(re.escape(self.sentinel_prefix) + r"\d{4}__")
+        pattern = re.compile(re.escape(self.sentinel_prefix) + r"\d+__")
         found = tuple(match.group() for match in pattern.finditer(candidate))
         if found != self.sentinels:
             raise ProtectedContentError(
@@ -126,14 +128,10 @@ def _select_non_overlapping(candidates: list[_Candidate]) -> tuple[_Candidate, .
     return tuple(sorted(selected, key=lambda item: item.start))
 
 
-def protect_text(
+def _caller_candidates(
     text: str,
-    *,
-    project_dictionary: ProjectDictionary | None = None,
-    caller_ranges: tuple[ByteRange, ...] = (),
-) -> ProtectedDocument:
-    """Replace facts and approved terms with ordered, auditable sentinels."""
-
+    caller_ranges: tuple[ByteRange, ...],
+) -> tuple[_Candidate, ...]:
     candidates: list[_Candidate] = []
     for byte_range in caller_ranges:
         try:
@@ -148,6 +146,21 @@ def protect_text(
                 priority=0,
             )
         )
+    ordered = tuple(sorted(candidates, key=lambda item: (item.start, item.end)))
+    if any(current.start < previous.end for previous, current in pairwise(ordered)):
+        raise ProtectedContentError("caller ranges overlap")
+    return ordered
+
+
+def protect_text(
+    text: str,
+    *,
+    project_dictionary: ProjectDictionary | None = None,
+    caller_ranges: tuple[ByteRange, ...] = (),
+) -> ProtectedDocument:
+    """Replace facts and approved terms with ordered, auditable sentinels."""
+
+    candidates = list(_caller_candidates(text, caller_ranges))
     candidates.extend(_regex_candidates(text, _CODE_RE, "code", 1))
     candidates.extend(_regex_candidates(text, _URL_RE, "url", 2))
     if project_dictionary is not None:
@@ -178,6 +191,10 @@ def protect_text(
             )
         )
 
+    if len(candidates) > _MAX_PROTECTED_SPANS:
+        raise ProtectedContentError(
+            f"protected span candidates exceed the limit of {_MAX_PROTECTED_SPANS}"
+        )
     selected = _select_non_overlapping(candidates)
     offsets = char_to_byte_offsets(text)
     sentinel_prefix = _sentinel_prefix(text)

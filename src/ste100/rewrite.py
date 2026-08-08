@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
+from typing import Literal
 
 from ste100.checker import analyze
 from ste100.contracts import Rewriter
@@ -15,7 +16,8 @@ from ste100.standard import StandardPack
 @dataclass(frozen=True, slots=True)
 class RewriteOutcome:
     model_id: str
-    candidate: str
+    status: Literal["review_required", "rejected"]
+    candidate: str | None
     source_analysis: AnalysisResult
     candidate_analysis: AnalysisResult
     protected_document: ProtectedDocument
@@ -64,11 +66,13 @@ def rewrite_candidate(
     )
     source_violations = _deterministic_violations(source_analysis)
     candidate_violations = _deterministic_violations(candidate_analysis)
+    gate_passed = candidate_violations <= source_violations
     return RewriteOutcome(
         model_id=rewriter.model_id,
-        candidate=candidate,
+        status="review_required" if gate_passed else "rejected",
+        candidate=candidate if gate_passed else None,
         source_analysis=source_analysis,
         candidate_analysis=candidate_analysis,
         protected_document=protected,
-        deterministic_gate_passed=candidate_violations <= source_violations,
+        deterministic_gate_passed=gate_passed,
     )

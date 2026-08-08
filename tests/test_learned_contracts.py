@@ -53,6 +53,7 @@ def test_rewriter_output_is_untrusted_protected_and_rechecked() -> None:
         rewriter=StaticRewriter(model_id="rewriter-test", candidate=candidate),
     )
 
+    assert outcome.status == "review_required"
     assert outcome.candidate == "Do not set UNIT_A now."
     assert outcome.deterministic_gate_passed
     assert outcome.official_compliance_claimed is False
@@ -67,6 +68,8 @@ def test_rewriter_gate_rejects_new_deterministic_violation() -> None:
         text,
         rewriter=StaticRewriter(model_id="rewriter-test", candidate=candidate),
     )
+    assert outcome.status == "rejected"
+    assert outcome.candidate is None
     assert not outcome.deterministic_gate_passed
 
 
@@ -78,6 +81,8 @@ def test_rewriter_gate_counts_duplicate_deterministic_violations() -> None:
         text,
         rewriter=StaticRewriter(model_id="rewriter-test", candidate=candidate),
     )
+    assert outcome.status == "rejected"
+    assert outcome.candidate is None
     assert not outcome.deterministic_gate_passed
 
 
