@@ -110,7 +110,7 @@ Document
 
 All ranges are half-open byte offsets into the original UTF-8 text. The parser does not normalize Unicode or line endings. A returned range must decode at a UTF-8 character boundary and reproduce the source excerpt.
 
-The deterministic word counter treats parenthesized text, quoted text, numbers with units, URLs, identifiers, and hyphenated units as single countable elements where the applicable Issue 9 rules require it. A colon terminates a sentence in a vertical list. Procedure markers are not treated as separate prose sentences.
+The deterministic word counter treats parenthesized text, quoted text, numbers with units, URLs, identifiers, and hyphenated units as single countable elements where the applicable Issue 9 rules require it. Under the full text of Rule 8.5, parenthesized prose counts as one word in the enclosing sentence and as a separate sentence for its own length check. A colon terminates a sentence in a vertical list. Procedure markers are not treated as separate prose sentences.
 
 ## Project terminology
 

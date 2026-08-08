@@ -225,8 +225,8 @@ def _length_findings(document: Document) -> tuple[list[Finding], set[str]]:
                     maximum=20,
                 )
             )
-        if block.kind is BlockKind.PARAGRAPH:
-            applicable.update(("6.3", "6.6"))
+        if block.kind in {BlockKind.PARAGRAPH, BlockKind.NOTE}:
+            applicable.add("6.3")
             findings.extend(
                 _sentence_limit_findings(
                     document,
@@ -237,6 +237,8 @@ def _length_findings(document: Document) -> tuple[list[Finding], set[str]]:
                     maximum=25,
                 )
             )
+        if block.kind is BlockKind.PARAGRAPH:
+            applicable.add("6.6")
             findings.extend(_paragraph_count_findings(document, block))
     if document.sentences:
         applicable.update(("8.4", "8.5", "8.6", "8.7"))

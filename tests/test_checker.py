@@ -115,6 +115,13 @@ def test_decimal_does_not_hide_descriptive_sentence_violation() -> None:
     assert any(item.rule_id == "6.3" for item in result.findings)
 
 
+def test_note_uses_descriptive_sentence_limit() -> None:
+    note = "NOTE: " + " ".join(f"word{index}" for index in range(26)) + "."
+    result = analyze(note)
+    finding = next(item for item in result.findings if item.rule_id == "6.3")
+    assert "mechanical count of 26" in finding.message
+
+
 def test_safety_instruction_uses_procedure_sentence_limit() -> None:
     warning = "WARNING: " + " ".join(f"word{index}" for index in range(21)) + "."
     result = analyze(warning)
