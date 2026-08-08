@@ -14,3 +14,4 @@ mutants/
 # Generated build outputs
 build/
 dist/
+/index.html
