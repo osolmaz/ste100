@@ -61,6 +61,15 @@ def test_approved_multiword_entry_occupies_its_full_range() -> None:
     ]
 
 
+def test_approved_ellipsis_entry_matches_words_as_placeholders() -> None:
+    result = analyze("The tube is as fast as the pump.")
+    assert not [
+        finding
+        for finding in result.findings
+        if finding.rule_id in {"1.1", "1.6"} and finding.excerpt in {"as", "as fast as", "fast"}
+    ]
+
+
 def test_unknown_vocabulary_requests_human_review() -> None:
     result = analyze("Install the xylophonium.")
     finding = next(item for item in result.findings if item.excerpt == "xylophonium")

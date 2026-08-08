@@ -17439,8 +17439,12 @@
     "word": "feel"
   },
   {
-    "alternatives": [],
-    "approved_forms": [],
+    "alternatives": [
+      "some"
+    ],
+    "approved_forms": [
+      "a few"
+    ],
     "approved_meanings": [],
     "entry_id": "few-0e3bc7545dce",
     "parts_of_speech": [
@@ -17452,30 +17456,7 @@
       "line_end": null,
       "line_start": null,
       "page": 249,
-      "row": "dictionary-row-766",
-      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
-      "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "status": "unapproved",
-    "word": "few"
-  },
-  {
-    "alternatives": [
-      "some"
-    ],
-    "approved_forms": [],
-    "approved_meanings": [],
-    "entry_id": "few-705f59b7f1d1",
-    "parts_of_speech": [
-      "adjective"
-    ],
-    "qualifier": "a few",
-    "review_state": "reviewed",
-    "source": {
-      "line_end": null,
-      "line_start": null,
-      "page": 249,
-      "row": "dictionary-row-767",
+      "row": "dictionary-row-766+dictionary-row-767",
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
     },
@@ -25317,7 +25298,9 @@
     "alternatives": [
       "minimum"
     ],
-    "approved_forms": [],
+    "approved_forms": [
+      "at least"
+    ],
     "approved_meanings": [],
     "entry_id": "least-e88c0cce5ba4",
     "parts_of_speech": [
@@ -25329,30 +25312,7 @@
       "line_end": null,
       "line_start": null,
       "page": 297,
-      "row": "dictionary-row-1113",
-      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
-      "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "status": "unapproved",
-    "word": "least"
-  },
-  {
-    "alternatives": [
-      "minimum"
-    ],
-    "approved_forms": [],
-    "approved_meanings": [],
-    "entry_id": "least-3da1a0b070db",
-    "parts_of_speech": [
-      "adverb"
-    ],
-    "qualifier": "at least",
-    "review_state": "reviewed",
-    "source": {
-      "line_end": null,
-      "line_start": null,
-      "page": 297,
-      "row": "dictionary-row-1114",
+      "row": "dictionary-row-1113+dictionary-row-1114",
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
     },
@@ -26060,7 +26020,9 @@
       "small",
       "short"
     ],
-    "approved_forms": [],
+    "approved_forms": [
+      "a little"
+    ],
     "approved_meanings": [],
     "entry_id": "little-5bb2dbe5aa90",
     "parts_of_speech": [
@@ -26072,28 +26034,7 @@
       "line_end": null,
       "line_start": null,
       "page": 301,
-      "row": "dictionary-row-1146",
-      "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
-      "source_file": "ASD-STE100_ISSUE9.txt"
-    },
-    "status": "unapproved",
-    "word": "little"
-  },
-  {
-    "alternatives": [],
-    "approved_forms": [],
-    "approved_meanings": [],
-    "entry_id": "little-522084636471",
-    "parts_of_speech": [
-      "adjective"
-    ],
-    "qualifier": "a little",
-    "review_state": "reviewed",
-    "source": {
-      "line_end": null,
-      "line_start": null,
-      "page": 301,
-      "row": "dictionary-row-1147",
+      "row": "dictionary-row-1146+dictionary-row-1147",
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
     },

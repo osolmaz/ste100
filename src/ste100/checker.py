@@ -243,6 +243,14 @@ def _is_protected(byte_range: ByteRange, ranges: tuple[ByteRange, ...]) -> bool:
     return any(item.start <= byte_range.start and byte_range.end <= item.end for item in ranges)
 
 
+def _dictionary_expression_pattern(expression: str) -> re.Pattern[str]:
+    pieces = expression.split("...")
+    body = r"\s+[\w-]+(?:\s+[\w-]+)*?\s+".join(
+        re.escape(piece.strip()).replace(r"\ ", r"\s+") for piece in pieces
+    )
+    return re.compile(rf"(?<![\w-]){body}(?![\w-])", re.IGNORECASE)
+
+
 def _dictionary_phrase_findings(  # noqa: C901 -- Approved and unapproved phrase dispatch.
     text: str,
     standard: StandardPack,
@@ -258,21 +266,30 @@ def _dictionary_phrase_findings(  # noqa: C901 -- Approved and unapproved phrase
         for expression in expressions:
             if " " in expression:
                 grouped.setdefault(expression, []).append(entry)
-    phrases = sorted(grouped.items(), key=lambda item: (-len(item[0]), item[0]))
+    phrases = sorted(
+        grouped.items(),
+        key=lambda item: (0 if "..." in item[0] else 1, -len(item[0]), item[0]),
+    )
     if not phrases:
         return [], ()
     offsets = char_to_byte_offsets(text)
     occupied: list[ByteRange] = []
     findings: list[Finding] = []
     for phrase, entries in phrases:
-        pattern = re.compile(rf"(?<![\w-]){re.escape(phrase)}(?![\w-])", re.IGNORECASE)
+        pattern = _dictionary_expression_pattern(phrase)
         for match in pattern.finditer(text):
             byte_range = ByteRange(start=offsets[match.start()], end=offsets[match.end()])
             if _overlaps(byte_range, (*project_ranges, *occupied)):
                 continue
             occupied.append(byte_range)
-            approved = tuple(entry for entry in entries if entry.status == "approved")
-            unapproved = tuple(entry for entry in entries if entry.status == "unapproved")
+            matched_entries = tuple(
+                {
+                    entry.entry_id: entry
+                    for entry in (*entries, *grouped.get(match.group().casefold(), ()))
+                }.values()
+            )
+            approved = tuple(entry for entry in matched_entries if entry.status == "approved")
+            unapproved = tuple(entry for entry in matched_entries if entry.status == "unapproved")
             if approved and unapproved:
                 findings.append(
                     _finding(
