@@ -7,7 +7,13 @@ import spacy
 
 from ste100.checker import analyze
 from ste100.linguistics import SpacyAnalyzer
-from ste100.models import CoverageStatus, Finding, FindingKind
+from ste100.models import (
+    CoverageStatus,
+    Finding,
+    FindingKind,
+    ProjectDictionary,
+    ProjectTerm,
+)
 from ste100.standard import load_bundled_standard
 
 
@@ -40,6 +46,13 @@ def test_spacy_pipeline_is_pinned_and_supplies_expected_analysis(
 
 def test_manually_verified_imperative_passes(analyzer: SpacyAnalyzer) -> None:
     assert _rule_findings("1. Open the access panel.", "5.3", analyzer) == []
+
+
+def test_negative_imperatives_are_recognized(analyzer: SpacyAnalyzer) -> None:
+    assert _rule_findings("1. Do not touch the valve.", "5.3", analyzer) == []
+    note = _rule_findings("NOTE: Do not touch the valve.", "5.5", analyzer)
+    assert note and {finding.kind for finding in note} == {FindingKind.VIOLATION}
+    assert _rule_findings("WARNING: Do not touch the valve.", "7.2", analyzer) == []
 
 
 def test_manually_verified_passive_instruction_fails(analyzer: SpacyAnalyzer) -> None:
@@ -114,6 +127,33 @@ def test_approved_word_in_unapproved_part_of_speech_fails(analyzer: SpacyAnalyze
     finding = _rule_findings("The use is clear.", "1.2", analyzer)[0]
     assert finding.excerpt == "use"
     assert finding.kind is FindingKind.VIOLATION
+
+
+def test_project_term_exempts_generic_pos_checks_but_retains_category_check(
+    analyzer: SpacyAnalyzer,
+) -> None:
+    project = ProjectDictionary(
+        format_version="1",
+        terms=(
+            ProjectTerm(
+                term="use",
+                category="technical_noun",
+                meaning="The intended function of a component",
+                source="project glossary",
+            ),
+        ),
+    )
+    noun_result = analyze(
+        "The use is clear.", project_dictionary=project, linguistic_analyzer=analyzer
+    )
+    assert not [
+        finding
+        for finding in noun_result.findings
+        if finding.excerpt == "use" and finding.rule_id in {"1.1", "1.2", "1.4"}
+    ]
+    verb_result = analyze("Use the tool.", project_dictionary=project, linguistic_analyzer=analyzer)
+    misuse = next(finding for finding in verb_result.findings if finding.rule_id == "1.7")
+    assert misuse.kind is FindingKind.VIOLATION
 
 
 def test_omitted_that_requires_a_finite_subordinate_clause(

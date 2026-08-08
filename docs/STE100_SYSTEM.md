@@ -73,9 +73,8 @@ A project dictionary supplies approved technical nouns and verbs. Validation rej
 - empty or malformed entries
 - one form assigned to different terms
 - technical nouns longer than three words
-- direct conflicts with unapproved standard entries
 
-Matching is case-insensitive and uses the longest approved term first. A matched project term is not reported as unknown vocabulary.
+Matching is case-insensitive and uses the longest approved term first. A matched project term is not reported as unknown vocabulary. Project terminology can approve a general word for a technical category even when the standard dictionary does not approve that part of speech; dedicated noun-versus-verb checks still apply.
 
 ## Deterministic checks
 

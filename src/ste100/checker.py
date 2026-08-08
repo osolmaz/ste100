@@ -555,12 +555,23 @@ def _block_for_token(document: Document, token: LinguisticToken) -> Block | None
 
 
 def _is_imperative(sentence: LinguisticSentence) -> bool:
+    tokens = sentence.tokens
+    if tokens and tokens[0].text.upper() in {"CAUTION", "NOTE", "WARNING"}:
+        colon = next((index for index, token in enumerate(tokens) if token.text == ":"), None)
+        if colon is not None:
+            tokens = tokens[colon + 1 :]
     roots = [
-        token for token in sentence.tokens if token.dependency == "ROOT" and token.pos == "VERB"
+        token for token in tokens if token.dependency == "ROOT" and token.pos in {"AUX", "VERB"}
     ]
-    if len(roots) != 1 or roots[0].pos != "VERB" or roots[0].tag != "VB":
+    if not roots:
+        roots = [
+            token
+            for token in tokens
+            if token.dependency == "xcomp" and token.pos in {"AUX", "VERB"}
+        ]
+    if len(roots) != 1 or roots[0].tag != "VB":
         return False
-    return not any(token.dependency in {"nsubj", "nsubjpass"} for token in sentence.tokens)
+    return not any(token.dependency in {"nsubj", "nsubjpass"} for token in tokens)
 
 
 def _omits_that_before_finite_clause(sentence: LinguisticSentence) -> bool:
@@ -734,11 +745,20 @@ def _token_linguistic_findings(  # noqa: C901 -- Independent linguistic clauses.
     project_ranges: tuple[ByteRange, ...],
 ) -> list[Finding]:
     findings: list[Finding] = []
+    owner = next(
+        (
+            match.term
+            for match in project_matches
+            if _overlaps(token.byte_range, (match.byte_range,))
+        ),
+        None,
+    )
     actual_pos = _SPACY_POS.get(token.pos)
     entries = index.get(token.text.casefold(), ())
     approved = tuple(entry for entry in entries if entry.status == "approved")
     if (
-        actual_pos is not None
+        owner is None
+        and actual_pos is not None
         and approved
         and not any(actual_pos in entry.parts_of_speech for entry in approved)
     ):
@@ -757,7 +777,7 @@ def _token_linguistic_findings(  # noqa: C901 -- Independent linguistic clauses.
         for entry in entries
         if entry.status == "unapproved" and actual_pos in entry.parts_of_speech
     )
-    if actual_pos not in {None, "noun", "verb"} and unapproved_for_pos:
+    if owner is None and actual_pos not in {None, "noun", "verb"} and unapproved_for_pos:
         for rule_id, checker_id in (("1.1", "vocabulary_pos"), ("1.6", "unapproved_pos")):
             findings.append(
                 _finding(
@@ -774,7 +794,7 @@ def _token_linguistic_findings(  # noqa: C901 -- Independent linguistic clauses.
         for entry in index.get(token.lemma, ())
         if entry.status == "approved" and actual_pos in entry.parts_of_speech
     )
-    if token.pos in {"VERB", "ADJ"} and lemma_entries:
+    if owner is None and token.pos in {"VERB", "ADJ"} and lemma_entries:
         allowed = {
             value.casefold()
             for entry in lemma_entries
@@ -834,14 +854,6 @@ def _token_linguistic_findings(  # noqa: C901 -- Independent linguistic clauses.
             )
         )
     if project is not None:
-        owner = next(
-            (
-                match.term
-                for match in project_matches
-                if _overlaps(token.byte_range, (match.byte_range,))
-            ),
-            None,
-        )
         if owner is not None and owner.category == "technical_noun" and token.pos == "VERB":
             findings.append(
                 _finding(
@@ -925,7 +937,7 @@ def analyze(
 
     standard = standard or load_bundled_standard()
     if project_dictionary is not None:
-        report = validate_project_dictionary(project_dictionary, standard=standard)
+        report = validate_project_dictionary(project_dictionary)
         if not report.valid:
             details = "; ".join(issue.message for issue in report.issues)
             raise ValueError(f"invalid project dictionary: {details}")
