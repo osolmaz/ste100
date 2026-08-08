@@ -236,6 +236,33 @@ def test_dataset_rejects_annotation_that_splits_utf8_character() -> None:
     assert "annotation_range" in {issue.code for issue in report.issues}
 
 
+def test_dataset_uses_source_order_not_protected_array_order() -> None:
+    first = ProtectedSpan(
+        span_id="span_5555555555555555",
+        kind="identifier",
+        byte_range=ByteRange(start=0, end=4),
+        text_digest=_digest("ID_A"),
+    )
+    second = ProtectedSpan(
+        span_id="span_6666666666666666",
+        kind="identifier",
+        byte_range=ByteRange(start=5, end=9),
+        text_digest=_digest("ID_B"),
+    )
+    valid = _record(
+        source_kind="technical_document",
+        source_id="source-order",
+        text="ID_A ID_B",
+        protected_spans=(second, first),
+        target_text="Keep ID_A ID_B.",
+    )
+    assert validate_dataset((valid,)).valid
+
+    reversed_target = valid.model_copy(update={"target_text": "Keep ID_B ID_A."})
+    codes = {issue.code for issue in validate_dataset((reversed_target,)).issues}
+    assert "protected_order" in codes
+
+
 def test_dataset_rejects_missing_parent_and_reordered_protected_values() -> None:
     first = ProtectedSpan(
         span_id="span_1111111111111111",

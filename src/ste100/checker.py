@@ -32,7 +32,7 @@ _APOSTROPHE = "['\u2019]"
 _CONTRACTION_RE = re.compile(
     rf"\b(?:[A-Za-z]+n{_APOSTROPHE}t|[Ii]{_APOSTROPHE}m|"
     rf"[A-Za-z]+{_APOSTROPHE}(?:re|ve|ll|d)|"
-    rf"(?:he|she|it|that|there|what){_APOSTROPHE}s)\b",
+    rf"(?:he|she|it|that|there|what|where|when|who|how|here|why|let){_APOSTROPHE}s)\b",
     re.IGNORECASE,
 )
 _LEXICAL_RE = re.compile(r"^[A-Za-z]+(?:'[A-Za-z]+)?$")

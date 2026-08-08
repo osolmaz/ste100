@@ -29,12 +29,15 @@ def _project_dictionary() -> ProjectDictionary:
 
 
 def test_semicolon_and_contraction_are_exact_findings() -> None:
-    result = analyze("Don't remove the cover; it won\u2019t move.")
+    result = analyze("Don't remove the cover; it won\u2019t move. Let's see where's blocked.")
     pairs = {(finding.rule_id, finding.excerpt) for finding in result.findings}
     assert ("4.2", "Don't") in pairs
     assert ("4.2", "won\u2019t") in pairs
+    assert ("4.2", "Let's") in pairs
+    assert ("4.2", "where's") in pairs
     assert ("8.1", ";") in pairs
     assert result.official_compliance_claimed is False
+    assert analyze("The pump's cover is open.").findings == ()
     assert len(result.coverage) == 61
 
 

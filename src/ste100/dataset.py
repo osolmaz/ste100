@@ -6,6 +6,7 @@ import hashlib
 import re
 from collections import Counter, defaultdict
 from collections.abc import Iterable
+from itertools import pairwise
 
 from ste100.document import slice_bytes
 from ste100.models import DatasetRecord, ProtectedSpan
@@ -136,9 +137,24 @@ def _check_target_values(
 
 def _check_record(record: DatasetRecord, issues: list[ValidationIssue]) -> None:
     _check_identity_and_annotations(record, issues)
+    ordered_spans = tuple(
+        sorted(
+            record.protected_spans, key=lambda span: (span.byte_range.start, span.byte_range.end)
+        )
+    )
+    if any(
+        current.byte_range.start < previous.byte_range.end
+        for previous, current in pairwise(ordered_spans)
+    ):
+        _issue(
+            issues,
+            "protected_overlap",
+            "protected source spans overlap",
+            record.record_id,
+        )
     originals = [
         original
-        for span in record.protected_spans
+        for span in ordered_spans
         if (original := _protected_original(record, span, issues)) is not None
     ]
     _check_target_values(record, originals, issues)

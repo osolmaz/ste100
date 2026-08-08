@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+import ste100.protection as protection_module
 from ste100.models import ByteRange, ProjectDictionary, ProjectTerm
 from ste100.protection import ProtectedContentError, protect_text
 from ste100.standard import StandardPack
@@ -120,10 +121,25 @@ def test_protection_rejects_drop_duplicate_reorder_and_unknown() -> None:
         protected.masked_text.replace(first, first + first),
         protected.masked_text.replace(first, "TEMP").replace(second, first).replace("TEMP", second),
         protected.masked_text + f" {protected.sentinel_prefix}9999__",
+        protected.masked_text + f" {protected.sentinel_prefix}10000__",
     ]
     for candidate in cases:
         with pytest.raises(ProtectedContentError):
             protected.restore(candidate)
+
+
+def test_overlapping_caller_ranges_are_rejected() -> None:
+    with pytest.raises(ProtectedContentError, match="overlap"):
+        protect_text(
+            "abcdef",
+            caller_ranges=(ByteRange(start=0, end=4), ByteRange(start=2, end=6)),
+        )
+
+
+def test_protected_span_limit_is_enforced(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(protection_module, "_MAX_PROTECTED_SPANS", 1)
+    with pytest.raises(ProtectedContentError, match="exceed"):
+        protect_text("Install ID_A at 10 mm.")
 
 
 def test_literal_sentinel_shaped_source_text_round_trips() -> None:
