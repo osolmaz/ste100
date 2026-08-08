@@ -134,7 +134,7 @@ def test_cli_extracts_a_valid_runtime_pack(
     assert main(["extract-standard", "docs/ASD-STE100_ISSUE9.txt", str(output)]) == 0
     manifest = json.loads(capsys.readouterr().out)
     assert manifest["review_state"] == "reviewed"
-    assert manifest["expected_counts"]["approved_words"] == 876
+    assert manifest["expected_counts"]["approved_words"] == 877
     assert main(["validate-standard", str(output)]) == 0
     assert json.loads(capsys.readouterr().out)["valid"] is True
 

@@ -13847,7 +13847,7 @@
     "alternatives": [],
     "approved_forms": [],
     "approved_meanings": [],
-    "entry_id": "electronically-rela-b816d30df38e",
+    "entry_id": "electronically-fbe6596baa2c",
     "parts_of_speech": [
       "adverb"
     ],
@@ -13860,8 +13860,8 @@
       "source_digest": "sha256:a216fe199bd6e9c77fc743dfe6dc081ee5f245adcb115ed6ca1aa45ee50fa3f5",
       "source_file": "ASD-STE100_ISSUE9.txt"
     },
-    "status": "unapproved",
-    "word": "electronically rela"
+    "status": "approved",
+    "word": "electronically"
   },
   {
     "alternatives": [
@@ -20178,7 +20178,7 @@
     "alternatives": [],
     "approved_forms": [],
     "approved_meanings": [],
-    "entry_id": "heard-heat-9d5aaec134a8",
+    "entry_id": "heat-cc73e9895d93",
     "parts_of_speech": [
       "noun"
     ],
@@ -20192,7 +20192,7 @@
       "source_file": "ASD-STE100_ISSUE9.txt"
     },
     "status": "approved",
-    "word": "heard heat"
+    "word": "heat"
   },
   {
     "alternatives": [
@@ -30928,7 +30928,7 @@
     ],
     "approved_forms": [],
     "approved_meanings": [],
-    "entry_id": "precautionary-p-bae3f79fe970",
+    "entry_id": "precautionary-7a232a4c4a0f",
     "parts_of_speech": [
       "adjective"
     ],
@@ -30942,7 +30942,7 @@
       "source_file": "ASD-STE100_ISSUE9.txt"
     },
     "status": "unapproved",
-    "word": "precautionary p"
+    "word": "precautionary"
   },
   {
     "alternatives": [

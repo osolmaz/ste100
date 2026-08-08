@@ -181,6 +181,12 @@ def test_vertical_list_requires_a_colon() -> None:
     assert _findings(good, "4.3") == []
 
 
+def test_long_protected_code_is_excluded_from_sentence_limits() -> None:
+    code = " ".join(f"token{index}" for index in range(30))
+    result = analyze(f"```text\n{code}\n```")
+    assert not [item for item in result.findings if item.rule_id in {"5.1", "6.3", "6.6"}]
+
+
 def test_vertical_lists_in_protected_code_are_ignored() -> None:
     text = "```text\nUse these items.\n1. A wrench.\n```"
     assert _findings(text, "4.3") == []
@@ -192,11 +198,20 @@ def test_colon_led_vertical_list_is_applicable_to_word_count() -> None:
     assert coverage.status is CoverageStatus.PASSED
 
 
-def test_initial_procedure_condition_requires_a_comma() -> None:
+def test_initial_procedure_condition_without_comma_requests_review() -> None:
     bad = "1. If the light comes on stop the test."
     good = "1. If the light comes on, stop the test."
-    assert _findings(bad, "5.4")
+    assert _findings(bad, "5.4") == [(FindingKind.HUMAN_REVIEW, bad)]
     assert _findings(good, "5.4") == []
+
+
+def test_condition_without_a_command_does_not_fail() -> None:
+    result = analyze("1. If the panel is hot.")
+    assert not [
+        item
+        for item in result.findings
+        if item.rule_id == "5.4" and item.kind is FindingKind.VIOLATION
+    ]
 
 
 def test_procedure_and_descriptive_sentence_limits() -> None:

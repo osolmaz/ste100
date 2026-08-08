@@ -1,14 +1,14 @@
 {
-  "count_reconciliation": "The fixed-column source table yields 876 approved and 1320 unapproved unique status/headword/part-of-speech rows after wrapped headwords are repaired. All source-traceable rows are retained; no row is deleted to force the printed totals.",
+  "count_reconciliation": "The fixed-column source table yields 877 approved and 1319 unapproved unique status/headword/part-of-speech rows after wrapped headwords are repaired. All source-traceable rows are retained; no row is deleted to force the printed totals.",
   "expected_counts": {
-    "approved_words": 876,
+    "approved_words": 877,
     "general_rules": 8,
     "numbered_rules": 53,
-    "unapproved_words": 1320
+    "unapproved_words": 1319
   },
   "file_digests": {
     "conformance.json": "sha256:900fd488c58d07e18d34204bd87481d6853eaf631afe4408424453187f99a23f",
-    "dictionary.json": "sha256:655694ec7b921d5463913d6f117d830f2b2fc38e6c137b289c24f0f565ff9daf",
+    "dictionary.json": "sha256:30be8cf2778e4e7cfbcbfa1837036a4c15f6626c02dad094b52d1edd9f253903",
     "examples.json": "sha256:28b6d7f28232ecec779922764b7b820b8434417aad54d323aa3533625304da6c",
     "rules.json": "sha256:7471388df4b8bb08100a67544105975272b85b69ed62bbc9917e0b97d3a10e5e"
   },
