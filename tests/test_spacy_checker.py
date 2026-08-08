@@ -48,8 +48,11 @@ def test_manually_verified_imperative_passes(analyzer: SpacyAnalyzer) -> None:
     assert _rule_findings("1. Open the access panel.", "5.3", analyzer) == []
 
 
-def test_negative_imperatives_are_recognized(analyzer: SpacyAnalyzer) -> None:
+def test_negative_and_subordinate_clause_imperatives_are_recognized(
+    analyzer: SpacyAnalyzer,
+) -> None:
     assert _rule_findings("1. Do not touch the valve.", "5.3", analyzer) == []
+    assert _rule_findings("1. Make sure that the valve is open.", "5.3", analyzer) == []
     note = _rule_findings("NOTE: Do not touch the valve.", "5.5", analyzer)
     assert note and {finding.kind for finding in note} == {FindingKind.VIOLATION}
     assert _rule_findings("WARNING: Do not touch the valve.", "7.2", analyzer) == []

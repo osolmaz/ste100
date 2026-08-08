@@ -17,6 +17,7 @@ class LinguisticToken:
     pos: str
     tag: str
     dependency: str
+    token_index: int
     head_index: int
     morphology: frozenset[str]
     byte_range: ByteRange
@@ -79,6 +80,7 @@ class SpacyAnalyzer:
                     pos=token.pos_,
                     tag=token.tag_,
                     dependency=token.dep_,
+                    token_index=token.i,
                     head_index=token.head.i,
                     morphology=frozenset(str(token.morph).split("|")),
                     byte_range=ByteRange(
