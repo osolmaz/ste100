@@ -21,13 +21,11 @@ def _check_response(value: str) -> int:
     result = analyze(value)
     encoded = value.encode("utf-8")
     for finding in result.findings:
-        if finding.byte_range is None:
-            continue
         excerpt = encoded[finding.byte_range.start : finding.byte_range.end].decode("utf-8")
         if excerpt != finding.excerpt:
             raise RuntimeError("finding offsets did not preserve source text")
-    if len(result.coverage) != 61:
-        raise RuntimeError("coverage catalog is incomplete")
+    if result.passed is bool(result.findings):
+        raise RuntimeError("passed does not match findings")
     return len(result.findings)
 
 

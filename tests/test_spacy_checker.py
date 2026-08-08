@@ -7,14 +7,7 @@ import spacy
 
 from ste100.checker import analyze
 from ste100.linguistics import SpacyAnalyzer
-from ste100.models import (
-    CoverageStatus,
-    Finding,
-    FindingKind,
-    ProjectDictionary,
-    ProjectTerm,
-)
-from ste100.standard import load_bundled_standard
+from ste100.models import Finding, ProjectDictionary, ProjectTerm
 
 
 @pytest.fixture(scope="module")
@@ -26,7 +19,7 @@ def _rule_findings(text: str, rule_id: str, analyzer: SpacyAnalyzer) -> list[Fin
     return [
         finding
         for finding in analyze(text, linguistic_analyzer=analyzer).findings
-        if finding.rule_id == rule_id
+        if rule_id in finding.rule_ids
     ]
 
 
@@ -44,93 +37,73 @@ def test_spacy_pipeline_is_pinned_and_supplies_expected_analysis(
     )
 
 
-def test_manually_verified_imperative_passes(analyzer: SpacyAnalyzer) -> None:
+def test_manually_verified_imperatives_pass(analyzer: SpacyAnalyzer) -> None:
     assert _rule_findings("1. Open the access panel.", "5.3", analyzer) == []
-
-
-def test_negative_and_subordinate_clause_imperatives_are_recognized(
-    analyzer: SpacyAnalyzer,
-) -> None:
     assert _rule_findings("1. Do not touch the valve.", "5.3", analyzer) == []
     assert _rule_findings("1. Make sure that the valve is open.", "5.3", analyzer) == []
-    note = _rule_findings("NOTE: Do not touch the valve.", "5.5", analyzer)
-    assert note and {finding.kind for finding in note} == {FindingKind.VIOLATION}
-    assert _rule_findings("WARNING: Do not touch the valve.", "7.2", analyzer) == []
-
-
-def test_manually_verified_passive_instruction_fails(analyzer: SpacyAnalyzer) -> None:
-    text = "1. The access panel is opened."
-    imperative = _rule_findings(text, "5.3", analyzer)
-    passive = _rule_findings(text, "3.6", analyzer)
-    assert imperative[0].kind is FindingKind.VIOLATION
-    assert len(passive) == 1
-    assert {item.kind for item in passive} == {FindingKind.VIOLATION}
-
-
-def test_descriptive_passive_abstains_for_agent_review(analyzer: SpacyAnalyzer) -> None:
-    findings = _rule_findings("The panel was removed.", "3.6", analyzer)
-    assert len(findings) == 1
-    assert {item.kind for item in findings} == {FindingKind.HUMAN_REVIEW}
 
 
 def test_note_instruction_is_rejected(analyzer: SpacyAnalyzer) -> None:
-    finding = _rule_findings("NOTE: Open the valve.", "5.5", analyzer)[0]
-    assert finding.kind is FindingKind.VIOLATION
-
-
-def test_informational_note_is_not_rejected(analyzer: SpacyAnalyzer) -> None:
+    assert _rule_findings("NOTE: Open the valve.", "5.5", analyzer)
+    assert _rule_findings("NOTE: Do not touch the valve.", "5.5", analyzer)
     assert _rule_findings("NOTE: The valve stays open during the test.", "5.5", analyzer) == []
 
 
-def test_multiple_procedure_actions_abstain_for_simultaneity_review(
-    analyzer: SpacyAnalyzer,
-) -> None:
-    finding = _rule_findings("1. Open the panel and remove the filter.", "5.2", analyzer)[0]
-    assert finding.kind is FindingKind.HUMAN_REVIEW
+def test_passive_instruction_fails_once(analyzer: SpacyAnalyzer) -> None:
+    text = "1. The access panel is opened."
+    assert _rule_findings(text, "5.3", analyzer)
+    passive = _rule_findings(text, "3.6", analyzer)
+    assert len(passive) == 1
 
 
-def test_safety_command_passes_and_descriptive_opening_abstains(
-    analyzer: SpacyAnalyzer,
-) -> None:
+def test_descriptive_passive_emits_no_unsupported_finding(analyzer: SpacyAnalyzer) -> None:
+    assert _rule_findings("The panel was removed.", "3.6", analyzer) == []
+
+
+def test_multiple_actions_emit_no_unsupported_finding(analyzer: SpacyAnalyzer) -> None:
+    assert _rule_findings("1. Open the panel and remove the filter.", "5.2", analyzer) == []
+
+
+def test_safety_opening_uses_verified_command_or_condition(analyzer: SpacyAnalyzer) -> None:
     assert _rule_findings("WARNING: Remove the fuse.", "7.2", analyzer) == []
-    review = _rule_findings("WARNING: The fuse is hot.", "7.2", analyzer)[0]
-    assert review.kind is FindingKind.HUMAN_REVIEW
+    assert _rule_findings("WARNING: If the fuse is hot, do not touch it.", "7.2", analyzer) == []
+    assert _rule_findings("WARNING: The fuse is hot.", "7.2", analyzer)
 
 
-def test_ing_form_abstains_for_technical_noun_review(analyzer: SpacyAnalyzer) -> None:
-    finding = _rule_findings("The technician is removing the panel.", "3.5", analyzer)[0]
-    assert finding.excerpt == "removing"
-    assert finding.kind is FindingKind.HUMAN_REVIEW
+def test_ambiguous_ing_and_complex_verb_checks_emit_nothing(
+    analyzer: SpacyAnalyzer,
+) -> None:
+    text = "The technician is removing the panel."
+    assert _rule_findings(text, "3.2", analyzer) == []
+    assert _rule_findings(text, "3.4", analyzer) == []
+    assert _rule_findings(text, "3.5", analyzer) == []
 
 
-def test_unlisted_verb_form_is_conclusive(analyzer: SpacyAnalyzer) -> None:
+def test_unlisted_verb_form_is_reported(analyzer: SpacyAnalyzer) -> None:
     findings = _rule_findings("The technician is removing the panel.", "3.1", analyzer)
     assert findings[0].excerpt == "removing"
-    assert findings[0].kind is FindingKind.VIOLATION
 
 
-def test_approved_verb_form_is_not_rejected(analyzer: SpacyAnalyzer) -> None:
+def test_approved_forms_are_not_rejected(analyzer: SpacyAnalyzer) -> None:
     assert _rule_findings("The technician removed the panel.", "3.1", analyzer) == []
-
-
-def test_approved_comparative_form_is_not_rejected(analyzer: SpacyAnalyzer) -> None:
     assert _rule_findings("The hole is deeper.", "1.4", analyzer) == []
 
 
-def test_unapproved_nontechnical_part_of_speech_is_conclusive(
+def test_unapproved_nontechnical_part_of_speech_is_one_finding(
     analyzer: SpacyAnalyzer,
 ) -> None:
-    findings = _rule_findings("The movement is abrupt.", "1.1", analyzer)
-    assert any(
-        finding.excerpt == "abrupt" and finding.kind is FindingKind.VIOLATION
-        for finding in findings
-    )
+    findings = [
+        finding
+        for finding in analyze("The movement is abrupt.", linguistic_analyzer=analyzer).findings
+        if finding.excerpt == "abrupt"
+    ]
+    assert len(findings) == 1
+    assert findings[0].rule_ids == ("1.1", "1.6")
 
 
 def test_approved_word_in_unapproved_part_of_speech_fails(analyzer: SpacyAnalyzer) -> None:
     finding = _rule_findings("The use is clear.", "1.2", analyzer)[0]
     assert finding.excerpt == "use"
-    assert finding.kind is FindingKind.VIOLATION
 
 
 def test_project_term_exempts_generic_pos_checks_but_retains_category_check(
@@ -153,23 +126,16 @@ def test_project_term_exempts_generic_pos_checks_but_retains_category_check(
     assert not [
         finding
         for finding in noun_result.findings
-        if finding.excerpt == "use" and finding.rule_id in {"1.1", "1.2", "1.4"}
+        if finding.excerpt == "use" and {"1.1", "1.2", "1.4"} & set(finding.rule_ids)
     ]
     verb_result = analyze("Use the tool.", project_dictionary=project, linguistic_analyzer=analyzer)
-    misuse = next(finding for finding in verb_result.findings if finding.rule_id == "1.7")
-    assert misuse.kind is FindingKind.VIOLATION
+    assert any("1.7" in finding.rule_ids for finding in verb_result.findings)
     code_result = analyze("`Use`", project_dictionary=project, linguistic_analyzer=analyzer)
-    assert not [finding for finding in code_result.findings if finding.rule_id == "1.7"]
+    assert not [finding for finding in code_result.findings if "1.7" in finding.rule_ids]
 
 
-def test_omitted_that_requires_a_finite_subordinate_clause(
-    analyzer: SpacyAnalyzer,
-) -> None:
-    review = _rule_findings("Make sure the valve is open.", "GR-1", analyzer)
-    assert review and {item.kind for item in review} == {FindingKind.HUMAN_REVIEW}
-    assert _rule_findings("Make sure that the valve is open.", "GR-1", analyzer) == []
-    assert _rule_findings("Show the result.", "GR-1", analyzer) == []
-    assert _rule_findings("Show how to remove the cover.", "GR-1", analyzer) == []
+def test_general_recommendation_does_not_emit_a_finding(analyzer: SpacyAnalyzer) -> None:
+    assert _rule_findings("Make sure the valve is open.", "GR-1", analyzer) == []
 
 
 def test_spacy_checks_ignore_inline_and_fenced_code(analyzer: SpacyAnalyzer) -> None:
@@ -179,31 +145,19 @@ def test_spacy_checks_ignore_inline_and_fenced_code(analyzer: SpacyAnalyzer) -> 
         finding
         for finding in result.findings
         if finding.excerpt in {"removing", "removed"}
-        and finding.rule_id in {"3.1", "3.2", "3.5", "3.6"}
+        and {"3.1", "3.2", "3.5", "3.6"} & set(finding.rule_ids)
     ]
     protected_root = analyze("1. `Open` the valve.", linguistic_analyzer=analyzer)
-    assert not [finding for finding in protected_root.findings if finding.rule_id == "5.3"]
+    assert not [finding for finding in protected_root.findings if "5.3" in finding.rule_ids]
 
 
-def test_spacy_rules_remain_human_review_when_analyzer_is_absent() -> None:
-    result = analyze("1. Open the panel.")
-    statuses = {item.rule_id: item.status for item in result.coverage}
-    for rule_id in ("1.2", "1.4", "3.1", "5.3", "GR-1"):
-        assert statuses[rule_id] is CoverageStatus.HUMAN_REVIEW
-
-
-def test_manually_verified_standard_note_examples(analyzer: SpacyAnalyzer) -> None:
-    examples = [
-        example for example in load_bundled_standard().examples if "5.5" in example.rule_ids
+def test_spacy_checks_are_absent_when_analyzer_is_absent() -> None:
+    result = analyze("1. The panel is opened.")
+    assert not [
+        finding
+        for finding in result.findings
+        if {"1.2", "1.4", "3.1", "3.6", "5.3"} & set(finding.rule_ids)
     ]
-    assert {example.label for example in examples} == {"positive", "negative"}
-    for example in examples:
-        failed = {
-            finding.rule_id
-            for finding in analyze(example.text, linguistic_analyzer=analyzer).findings
-            if finding.kind is FindingKind.VIOLATION
-        }
-        assert ("5.5" in failed) is (example.label == "negative")
 
 
 @pytest.mark.parametrize(
@@ -217,11 +171,7 @@ def test_manually_verified_standard_note_examples(analyzer: SpacyAnalyzer) -> No
 def test_spacy_pipeline_requires_parser_and_pos_component(
     components: tuple[str, ...], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(
-        spacy,
-        "load",
-        lambda _: SimpleNamespace(pipe_names=components, meta={}),
-    )
+    monkeypatch.setattr(spacy, "load", lambda _: SimpleNamespace(pipe_names=components, meta={}))
     with pytest.raises(RuntimeError, match="parser and a POS-producing component"):
         SpacyAnalyzer()
 

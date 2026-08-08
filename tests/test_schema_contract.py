@@ -8,9 +8,7 @@ from ste100.schemas import generate_schemas
 
 _EXPECTED = {
     "analysis.schema.json",
-    "conformance.schema.json",
     "dictionary.schema.json",
-    "examples.schema.json",
     "project-dictionary.schema.json",
     "rules.schema.json",
     "standard.schema.json",
@@ -19,7 +17,11 @@ _EXPECTED = {
 
 def test_schema_generator_writes_only_deterministic_contracts(tmp_path: Path) -> None:
     output = tmp_path / "nested" / "schemas"
+    output.mkdir(parents=True)
+    stale = output / "conformance.schema.json"
+    stale.write_text("{}\n", encoding="utf-8")
     paths = generate_schemas(output)
+    assert not stale.exists()
     assert {path.name for path in paths} == _EXPECTED
     assert all(path.parent == output for path in paths)
     assert all(path.read_text(encoding="utf-8").endswith("\n") for path in paths)
@@ -36,7 +38,7 @@ def test_schema_generation_has_registered_bytes(tmp_path: Path) -> None:
         digest.update(path.name.encode())
         digest.update(b"\0")
         digest.update(path.read_bytes())
-    assert digest.hexdigest() == "f8d6fc06b899fe81f5cd8451c5d37fdd0b7c40207cb32bc6293ad00450076239"
+    assert digest.hexdigest() == "fbe943249bd5a900d651ab3b56ce9f208bf9b23060d69f4439c166eae2238ce9"
 
 
 def test_schema_generation_is_byte_reproducible_and_repeatable(tmp_path: Path) -> None:

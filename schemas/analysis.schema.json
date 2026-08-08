@@ -22,146 +22,44 @@
       "title": "ByteRange",
       "type": "object"
     },
-    "CoverageStatus": {
-      "enum": [
-        "passed",
-        "failed",
-        "human_review",
-        "not_applicable"
-      ],
-      "title": "CoverageStatus",
-      "type": "string"
-    },
     "Finding": {
       "additionalProperties": false,
       "properties": {
         "byte_range": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/ByteRange"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
-        },
-        "checker_id": {
-          "minLength": 1,
-          "title": "Checker Id",
-          "type": "string"
+          "$ref": "#/$defs/ByteRange"
         },
         "excerpt": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Excerpt"
-        },
-        "finding_id": {
-          "pattern": "^finding_[0-9a-f]{16}$",
-          "title": "Finding Id",
+          "title": "Excerpt",
           "type": "string"
-        },
-        "kind": {
-          "$ref": "#/$defs/FindingKind"
         },
         "message": {
           "minLength": 1,
           "title": "Message",
           "type": "string"
         },
-        "rule_id": {
-          "pattern": "^(?:[1-9]\\d*\\.[1-9]\\d*|GR-[1-9]\\d*)$",
-          "title": "Rule Id",
-          "type": "string"
+        "rule_ids": {
+          "items": {
+            "pattern": "^(?:[1-9]\\d*\\.[1-9]\\d*|GR-[1-9]\\d*)$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Rule Ids",
+          "type": "array"
         }
       },
       "required": [
-        "finding_id",
-        "rule_id",
-        "kind",
+        "rule_ids",
         "message",
-        "checker_id"
+        "byte_range",
+        "excerpt"
       ],
       "title": "Finding",
       "type": "object"
-    },
-    "FindingKind": {
-      "enum": [
-        "violation",
-        "human_review"
-      ],
-      "title": "FindingKind",
-      "type": "string"
-    },
-    "RuleCoverage": {
-      "additionalProperties": false,
-      "properties": {
-        "finding_ids": {
-          "default": [],
-          "items": {
-            "type": "string"
-          },
-          "title": "Finding Ids",
-          "type": "array"
-        },
-        "reason": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Reason"
-        },
-        "rule_id": {
-          "pattern": "^(?:[1-9]\\d*\\.[1-9]\\d*|GR-[1-9]\\d*)$",
-          "title": "Rule Id",
-          "type": "string"
-        },
-        "status": {
-          "$ref": "#/$defs/CoverageStatus"
-        },
-        "treatment": {
-          "$ref": "#/$defs/RuleTreatment"
-        }
-      },
-      "required": [
-        "rule_id",
-        "treatment",
-        "status"
-      ],
-      "title": "RuleCoverage",
-      "type": "object"
-    },
-    "RuleTreatment": {
-      "enum": [
-        "deterministic",
-        "human_review"
-      ],
-      "title": "RuleTreatment",
-      "type": "string"
     }
   },
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
-    "coverage": {
-      "items": {
-        "$ref": "#/$defs/RuleCoverage"
-      },
-      "title": "Coverage",
-      "type": "array"
-    },
     "findings": {
       "items": {
         "$ref": "#/$defs/Finding"
@@ -169,10 +67,8 @@
       "title": "Findings",
       "type": "array"
     },
-    "official_compliance_claimed": {
-      "const": false,
-      "default": false,
-      "title": "Official Compliance Claimed",
+    "passed": {
+      "title": "Passed",
       "type": "boolean"
     },
     "standard_digest": {
@@ -195,8 +91,8 @@
     "standard_id",
     "standard_issue",
     "standard_digest",
-    "findings",
-    "coverage"
+    "passed",
+    "findings"
   ],
   "title": "AnalysisResult",
   "type": "object"

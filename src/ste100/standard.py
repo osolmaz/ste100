@@ -1,4 +1,4 @@
-"""Load and validate reviewed standard packs."""
+"""Load and validate extracted ASD-STE100 Issue 9 data."""
 
 from __future__ import annotations
 
@@ -8,27 +8,13 @@ from dataclasses import dataclass
 from functools import lru_cache
 from importlib.resources import files
 from pathlib import Path
-from typing import Literal
 
 from pydantic import BaseModel, ValidationError
 
-from ste100.models import (
-    ConformanceRecord,
-    DictionaryEntry,
-    ReviewState,
-    RuleRecord,
-    StandardExample,
-    StandardManifest,
-)
+from ste100.models import DictionaryEntry, RuleRecord, StandardManifest
 from ste100.rule_ids import ISSUE9_RULE_ID_SET
 
-_REQUIRED_FILES = frozenset({"rules.json", "dictionary.json", "examples.json", "conformance.json"})
-_ISSUE9_COUNTS = {
-    "numbered_rules": 53,
-    "general_rules": 8,
-    "approved_words": 875,
-    "unapproved_words": 1274,
-}
+_REQUIRED_FILES = frozenset({"rules.json", "dictionary.json"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,7 +22,6 @@ class ValidationIssue:
     code: str
     message: str
     path: str | None = None
-    severity: Literal["error", "warning"] = "error"
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,7 +30,7 @@ class ValidationReport:
 
     @property
     def valid(self) -> bool:
-        return not any(issue.severity == "error" for issue in self.issues)
+        return not self.issues
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,8 +39,6 @@ class StandardPack:
     manifest: StandardManifest
     rules: tuple[RuleRecord, ...]
     dictionary: tuple[DictionaryEntry, ...]
-    examples: tuple[StandardExample, ...]
-    conformance: tuple[ConformanceRecord, ...]
 
     @property
     def rules_by_id(self) -> dict[str, RuleRecord]:
@@ -79,12 +62,10 @@ class StandardPack:
 class _Artifacts:
     rules: tuple[RuleRecord, ...]
     dictionary: tuple[DictionaryEntry, ...]
-    examples: tuple[StandardExample, ...]
-    conformance: tuple[ConformanceRecord, ...]
 
 
 class StandardValidationError(ValueError):
-    """Raised when a standard pack is not safe to load."""
+    """Raised when extracted standard data is not safe to load."""
 
     def __init__(self, report: ValidationReport) -> None:
         self.report = report
@@ -136,29 +117,12 @@ def _add(issues: list[ValidationIssue], code: str, message: str, path: str | Non
     issues.append(ValidationIssue(code=code, message=message, path=path))
 
 
-def _warn(issues: list[ValidationIssue], code: str, message: str) -> None:
-    issues.append(ValidationIssue(code=code, message=message, severity="warning"))
-
-
-def _check_duplicates(
-    issues: list[ValidationIssue],
-    values: list[str],
-    *,
-    label: str,
-    path: str,
-) -> None:
-    seen: set[str] = set()
-    for value in values:
-        if value in seen:
-            _add(issues, "duplicate_id", f"duplicate {label}: {value}", path)
-        seen.add(value)
-
-
 def _parse_manifest(root: Path, issues: list[ValidationIssue]) -> StandardManifest | None:
+    path = root / "standard.json"
     try:
-        return _load_model(root / "standard.json", StandardManifest)
+        return _load_model(path, StandardManifest)
     except (OSError, ValueError, ValidationError, json.JSONDecodeError) as error:
-        _add(issues, "invalid_manifest", str(error), "standard.json")
+        _add(issues, "invalid_manifest", str(error), str(path))
         return None
 
 
@@ -199,45 +163,45 @@ def _resolve_artifacts(
     return paths
 
 
-def _load_artifacts(
-    paths: dict[str, Path],
-    issues: list[ValidationIssue],
-) -> _Artifacts | None:
+def _load_artifacts(paths: dict[str, Path], issues: list[ValidationIssue]) -> _Artifacts | None:
     if set(paths) != _REQUIRED_FILES:
         return None
     try:
         return _Artifacts(
             rules=_load_model_list(paths["rules.json"], RuleRecord),
             dictionary=_load_model_list(paths["dictionary.json"], DictionaryEntry),
-            examples=_load_model_list(paths["examples.json"], StandardExample),
-            conformance=_load_model_list(paths["conformance.json"], ConformanceRecord),
         )
     except (OSError, ValueError, ValidationError, json.JSONDecodeError) as error:
         _add(issues, "invalid_artifact", str(error))
         return None
 
 
+def _check_duplicates(
+    issues: list[ValidationIssue], values: list[str], *, label: str, path: str
+) -> None:
+    seen: set[str] = set()
+    duplicates: set[str] = set()
+    for value in values:
+        if value in seen:
+            duplicates.add(value)
+        seen.add(value)
+    for value in sorted(duplicates):
+        _add(issues, "duplicate_id", f"duplicate {label}: {value}", path)
+
+
 def _check_ids(artifacts: _Artifacts, issues: list[ValidationIssue]) -> None:
-    groups = (
-        ([rule.rule_id for rule in artifacts.rules], "rule ID", "rules.json"),
-        (
-            [entry.entry_id for entry in artifacts.dictionary],
-            "dictionary entry ID",
-            "dictionary.json",
-        ),
-        (
-            [example.example_id for example in artifacts.examples],
-            "example ID",
-            "examples.json",
-        ),
-        (
-            [item.rule_id for item in artifacts.conformance],
-            "conformance rule ID",
-            "conformance.json",
-        ),
+    _check_duplicates(
+        issues,
+        [rule.rule_id for rule in artifacts.rules],
+        label="rule ID",
+        path="rules.json",
     )
-    for values, label, path in groups:
-        _check_duplicates(issues, values, label=label, path=path)
+    _check_duplicates(
+        issues,
+        [entry.entry_id for entry in artifacts.dictionary],
+        label="dictionary entry ID",
+        path="dictionary.json",
+    )
     dictionary_keys = [
         f"{entry.status}:{entry.word.casefold()}:{','.join(sorted(set(entry.parts_of_speech)))}"
         for entry in artifacts.dictionary
@@ -250,135 +214,78 @@ def _check_ids(artifacts: _Artifacts, issues: list[ValidationIssue]) -> None:
     )
 
 
-def _check_references(artifacts: _Artifacts, issues: list[ValidationIssue]) -> None:
+def _check_rule_ids(artifacts: _Artifacts, issues: list[ValidationIssue]) -> None:
     rule_ids = {rule.rule_id for rule in artifacts.rules}
-    if rule_ids != ISSUE9_RULE_ID_SET:
-        missing = sorted(ISSUE9_RULE_ID_SET - rule_ids)
-        extra = sorted(rule_ids - ISSUE9_RULE_ID_SET)
-        _add(
-            issues,
-            "rule_catalog",
-            f"Issue 9 rule IDs differ; missing={missing}, extra={extra}",
-            "rules.json",
-        )
-    dictionary_ids = {
-        rule_id
-        for entry in artifacts.dictionary
-        for meaning in entry.approved_meanings
-        for rule_id in meaning.rule_ids
-    }
-    example_ids = {rule_id for example in artifacts.examples for rule_id in example.rule_ids}
-    unknown = sorted((dictionary_ids | example_ids) - rule_ids)
-    if unknown:
-        _add(issues, "unknown_rule_reference", f"unknown rule IDs: {unknown}")
-    if {item.rule_id for item in artifacts.conformance} != rule_ids:
-        _add(
-            issues,
-            "conformance_coverage",
-            "conformance records must contain each rule exactly once",
-            "conformance.json",
-        )
+    if rule_ids == ISSUE9_RULE_ID_SET:
+        return
+    missing = sorted(ISSUE9_RULE_ID_SET - rule_ids)
+    extra = sorted(rule_ids - ISSUE9_RULE_ID_SET)
+    _add(
+        issues,
+        "rule_catalog",
+        f"Issue 9 rule catalog differs; missing={missing}, extra={extra}",
+        "rules.json",
+    )
 
 
-def _check_counts(
+def _check_source_digests(
     manifest: StandardManifest,
     artifacts: _Artifacts,
     issues: list[ValidationIssue],
 ) -> None:
-    counts = {
-        "numbered_rules": sum(not rule.rule_id.startswith("GR-") for rule in artifacts.rules),
-        "general_rules": sum(rule.rule_id.startswith("GR-") for rule in artifacts.rules),
-        "approved_words": sum(entry.status == "approved" for entry in artifacts.dictionary),
-        "unapproved_words": sum(entry.status == "unapproved" for entry in artifacts.dictionary),
-    }
-    for name, expected in manifest.expected_counts.model_dump().items():
-        if counts[name] != expected:
+    expected = manifest.source.source_digest
+    records: tuple[RuleRecord | DictionaryEntry, ...] = (
+        *artifacts.rules,
+        *artifacts.dictionary,
+    )
+    for record in records:
+        if record.source.source_digest != expected:
             _add(
                 issues,
-                "count_mismatch",
-                f"{name}: expected {expected}, got {counts[name]}",
+                "source_digest_mismatch",
+                f"record source digest differs from manifest: {record.source.source_digest}",
             )
 
 
-def _check_review_state(
-    manifest: StandardManifest,
-    artifacts: _Artifacts,
-    issues: list[ValidationIssue],
-) -> None:
-    if manifest.review_state is not ReviewState.REVIEWED:
-        return
-    unreviewed = (
-        any(rule.review_state is not ReviewState.REVIEWED for rule in artifacts.rules)
-        or any(entry.review_state is not ReviewState.REVIEWED for entry in artifacts.dictionary)
-        or any(example.review_state is not ReviewState.REVIEWED for example in artifacts.examples)
-    )
-    if unreviewed:
-        _add(issues, "review_state_mismatch", "a reviewed manifest contains draft records")
+def validate_standard_pack(root: Path) -> ValidationReport:
+    """Validate extracted rules and dictionary data without loading them."""
 
-
-def validate_standard_pack(root: Path, *, allow_draft: bool = False) -> ValidationReport:
-    """Validate digests, counts, references, review state, and path containment."""
-
-    root = root.resolve()
     issues: list[ValidationIssue] = []
     manifest = _parse_manifest(root, issues)
     if manifest is None:
         return ValidationReport(tuple(issues))
-    if manifest.review_state is ReviewState.DRAFT and not allow_draft:
-        _add(issues, "draft_pack", "runtime loading requires a reviewed standard pack")
-    if manifest.published_counts.model_dump() != _ISSUE9_COUNTS:
-        _add(
-            issues,
-            "invalid_published_counts",
-            "the manifest published baseline must match Issue 9",
-        )
-    published_differences = {
-        name: manifest.expected_counts.model_dump()[name] - published
-        for name, published in manifest.published_counts.model_dump().items()
-        if manifest.expected_counts.model_dump()[name] != published
-    }
-    if published_differences:
-        _warn(
-            issues,
-            "published_count_difference",
-            f"pack counts differ from the published totals: {published_differences}",
-        )
     _check_artifact_set(manifest, issues)
     artifacts = _load_artifacts(_resolve_artifacts(root, manifest, issues), issues)
     if artifacts is not None:
         _check_ids(artifacts, issues)
-        _check_references(artifacts, issues)
-        _check_counts(manifest, artifacts, issues)
-        _check_review_state(manifest, artifacts, issues)
+        _check_rule_ids(artifacts, issues)
+        _check_source_digests(manifest, artifacts, issues)
     return ValidationReport(tuple(issues))
 
 
 def bundled_standard_path() -> Path:
-    """Return the installed bundled Issue 9 pack path."""
+    """Return the installed bundled Issue 9 data path."""
 
     return Path(str(files("ste100.data").joinpath("issue9")))
 
 
 @lru_cache(maxsize=1)
 def load_bundled_standard() -> StandardPack:
-    """Load and cache the bundled deterministic Issue 9 pack."""
+    """Load and cache the bundled Issue 9 data."""
 
     return load_standard_pack(bundled_standard_path())
 
 
 def load_standard_pack(root: Path) -> StandardPack:
-    """Load a reviewed standard pack only after all validation checks pass."""
+    """Load extracted standard data after validation passes."""
 
-    report = validate_standard_pack(root, allow_draft=False)
+    report = validate_standard_pack(root)
     if not report.valid:
         raise StandardValidationError(report)
     resolved = root.resolve()
-    manifest = _load_model(resolved / "standard.json", StandardManifest)
     return StandardPack(
         root=resolved,
-        manifest=manifest,
+        manifest=_load_model(resolved / "standard.json", StandardManifest),
         rules=_load_model_list(resolved / "rules.json", RuleRecord),
         dictionary=_load_model_list(resolved / "dictionary.json", DictionaryEntry),
-        examples=_load_model_list(resolved / "examples.json", StandardExample),
-        conformance=_load_model_list(resolved / "conformance.json", ConformanceRecord),
     )

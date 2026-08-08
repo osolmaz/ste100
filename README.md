@@ -1,10 +1,8 @@
 # ste100
 
-`ste100` is an offline deterministic checker for ASD-STE100 Issue 9. It finds mechanical writing and vocabulary problems, cites the applicable rule and byte range, and shows which requirements still need human review.
+`ste100` is an offline checker for parts of ASD-STE100 Issue 9. It checks pasted or saved technical text against an extracted dictionary and a set of source-backed writing checks.
 
-The package includes a source-traceable Issue 9 dictionary and rule pack. `ste100 analyze` uses it automatically, so users do not need to supply a separate standard pack.
-
-The checker does not certify official ASD-STE100 compliance.
+The tool does not certify ASD-STE100 compliance. `PASS` means that the checks implemented by this tool found no issue. Rules that the tool cannot determine produce no result.
 
 ## Install
 
@@ -14,22 +12,24 @@ The checker does not certify official ASD-STE100 compliance.
 uv tool install .
 ```
 
-The default checker does not need network access or a language model.
+The default checks run without network access or a language model.
 
-Optional part-of-speech, morphology, imperative, and passive-voice checks use the pinned spaCy pipeline:
+Optional part-of-speech and verb-form checks use a pinned spaCy pipeline. The same pipeline supports imperative and note checks, plus passive voice:
 
 ```sh
 uv tool install '.[spacy]' \
   --with 'https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl'
 ```
 
-All runtime files must already be installed before offline use.
+Install all runtime files before offline use.
 
-## Analyze a file
+## Check a file
 
 ```sh
 ste100 analyze manual.txt
 ```
+
+Text output starts with `PASS` or `FAIL`. A failed result lists each source span once with every applicable rule number.
 
 Use JSON output for integrations:
 
@@ -37,19 +37,36 @@ Use JSON output for integrations:
 ste100 analyze manual.txt --format json
 ```
 
-Enable the optional pinned spaCy checks:
+The JSON result contains:
 
-```sh
-ste100 analyze manual.txt --spacy --format json
+```json
+{
+  "standard_id": "ASD-STE100",
+  "standard_issue": 9,
+  "standard_digest": "sha256:...",
+  "passed": false,
+  "findings": [
+    {
+      "rule_ids": ["1.1", "1.6"],
+      "message": "'option' is listed as unapproved. Use: alternative, can, possible.",
+      "byte_range": {"start": 20, "end": 26},
+      "excerpt": "option"
+    }
+  ]
+}
 ```
 
-A result reports one of four states for every Issue 9 rule and general recommendation. `passed` means the complete mechanical requirement ran and passed. `failed` marks a conclusive violation. `human_review` means that the requirement or remaining clause needs judgment. `not_applicable` means that the document does not contain the applicable structure.
+The command exits with status `0` for `PASS`, `1` for `FAIL`, and `2` for invalid input or configuration.
 
-The command exits with status `1` when it finds a conclusive violation and `2` for invalid input or configuration.
+Enable the optional spaCy checks with:
 
-## Project terminology
+```sh
+ste100 analyze manual.txt --spacy
+```
 
-A project dictionary approves technical nouns and verbs that do not belong in the general dictionary:
+## Project terms
+
+ASD-STE100 permits approved technical nouns and technical verbs. Supply them in a project dictionary so the checker does not treat them as missing vocabulary:
 
 ```json
 {
@@ -66,33 +83,34 @@ A project dictionary approves technical nouns and verbs that do not belong in th
 }
 ```
 
-Validate and use it:
+Validate and use the file:
 
 ```sh
 ste100 validate-project-dictionary project-terms.json
 ste100 analyze manual.txt --project-dictionary project-terms.json
 ```
 
-The validator rejects ambiguous forms and technical nouns longer than three words. A project term can use a general word that the standard dictionary does not approve for that part of speech.
+A word absent from both the extracted STE dictionary and the supplied project dictionary causes `FAIL`.
 
-## Rules and standard packs
+## Source data
 
-Explain a rule and its automatic coverage:
+The package includes an internal extraction of the Issue 9 rule summaries and dictionary table. It is not an official machine-readable ASD data set.
+
+Show an extracted rule or general recommendation:
 
 ```sh
 ste100 explain 8.1
+ste100 explain GR-1
 ```
 
-Validate another local Issue 9 pack:
+Validate another local extraction:
 
 ```sh
-ste100 validate-standard /path/to/issue-9-pack
-ste100 analyze manual.txt --standard-pack /path/to/issue-9-pack
+ste100 validate-standard /path/to/issue-9-data
+ste100 analyze manual.txt --standard-pack /path/to/issue-9-data
 ```
 
-The bundled pack keeps every dictionary row tied to the exact source digest and page. Its manifest records the extracted counts. Differences from the totals printed in Issue 9 produce a warning, and valid source rows stay in the pack.
-
-See [`docs/STE100_SYSTEM.md`](docs/STE100_SYSTEM.md) for the file formats, coverage rules, and checker boundaries.
+See [`docs/STE100_SYSTEM.md`](docs/STE100_SYSTEM.md) for the result and data formats.
 
 ## Standard and license
 

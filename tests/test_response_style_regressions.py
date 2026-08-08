@@ -5,10 +5,6 @@ from pathlib import Path
 from typing import cast
 
 from ste100.checker import analyze
-from ste100.linguistics import SpacyAnalyzer
-from ste100.models import FindingKind
-
-_SPACY = SpacyAnalyzer()
 
 
 def _fixtures() -> list[dict[str, object]]:
@@ -18,17 +14,8 @@ def _fixtures() -> list[dict[str, object]]:
     return cast(list[dict[str, object]], value)
 
 
-def _reported_rules(text: str, *, with_spacy: bool = False) -> set[str]:
-    analyzer = _SPACY if with_spacy else None
-    return {finding.rule_id for finding in analyze(text, linguistic_analyzer=analyzer).findings}
-
-
-def _failed_rules(text: str) -> set[str]:
-    return {
-        finding.rule_id
-        for finding in analyze(text).findings
-        if finding.kind is FindingKind.VIOLATION
-    }
+def _reported_rules(text: str) -> set[str]:
+    return {rule_id for finding in analyze(text).findings for rule_id in finding.rule_ids}
 
 
 def test_sanitized_response_style_fixture_is_broad_and_contains_no_provenance() -> None:
@@ -39,7 +26,7 @@ def test_sanitized_response_style_fixture_is_broad_and_contains_no_provenance() 
     assert all(not (forbidden & set(record)) for record in records)
 
 
-def test_sanitized_rule_repairs_remove_the_expected_mechanical_failure() -> None:
+def test_sanitized_repairs_remove_expected_source_backed_findings() -> None:
     checked = 0
     for record in _fixtures():
         expected = set(cast(list[str], record["expected_changed_rule_ids"]))
@@ -47,19 +34,13 @@ def test_sanitized_rule_repairs_remove_the_expected_mechanical_failure() -> None
             continue
         initial = str(record["initial_assistant_response"])
         final = str(record["final_assistant_response"])
-        review_only = {"1.1", "5.4", "GR-1", "GR-6", "GR-7"}
-        observed = (
-            _reported_rules(initial, with_spacy="GR-1" in expected)
-            if expected <= review_only
-            else _failed_rules(initial)
-        )
-        assert expected <= observed, record["fixture_id"]
+        assert expected <= _reported_rules(initial), record["fixture_id"]
         assert not (expected & _reported_rules(final)), record["fixture_id"]
         checked += 1
-    assert checked >= 12
+    assert checked >= 9
 
 
-def test_plain_shortening_remains_separate_from_rule_compliance() -> None:
+def test_plain_shortening_remains_separate_from_rule_checks() -> None:
     record = _fixtures()[0]
     initial = str(record["initial_assistant_response"])
     final = str(record["final_assistant_response"])

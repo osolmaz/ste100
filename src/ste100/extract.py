@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import re
 
-from ste100.models import ReviewState, RuleRecord, RuleTreatment, SourceLocation
+from ste100.models import RuleRecord, SourceLocation
 
 _RULE_RE = re.compile(r"^\s*Rule\s+(\d+\.\d+)\s+(.*\S)\s*$")
 _GENERAL_RE = re.compile(
@@ -57,10 +57,7 @@ def _numbered_summary_records(
             RuleRecord(
                 rule_id=match.group(1),
                 requirement=" ".join(fragment.strip() for fragment in fragments),
-                treatment=RuleTreatment.HUMAN_REVIEW,
-                review_state=ReviewState.DRAFT,
                 source=_source_location(source_name, digest, page_number),
-                notes="Extracted from the section summary.",
             )
         )
     return tuple(records)
@@ -81,10 +78,7 @@ def _general_summary_records(
             RuleRecord(
                 rule_id=match.group(1),
                 requirement=match.group(2).strip(),
-                treatment=RuleTreatment.HUMAN_REVIEW,
-                review_state=ReviewState.DRAFT,
                 source=_source_location(source_name, digest, page_number),
-                notes="Extracted from the general-recommendation summary.",
             )
             for match in matches
         )

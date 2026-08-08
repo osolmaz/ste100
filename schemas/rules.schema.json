@@ -1,35 +1,12 @@
 {
   "$defs": {
-    "ReviewState": {
-      "enum": [
-        "draft",
-        "reviewed"
-      ],
-      "title": "ReviewState",
-      "type": "string"
-    },
     "RuleRecord": {
       "additionalProperties": false,
       "properties": {
-        "notes": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Notes"
-        },
         "requirement": {
           "minLength": 1,
           "title": "Requirement",
           "type": "string"
-        },
-        "review_state": {
-          "$ref": "#/$defs/ReviewState"
         },
         "rule_id": {
           "pattern": "^(?:[1-9]\\d*\\.[1-9]\\d*|GR-[1-9]\\d*)$",
@@ -38,28 +15,15 @@
         },
         "source": {
           "$ref": "#/$defs/SourceLocation"
-        },
-        "treatment": {
-          "$ref": "#/$defs/RuleTreatment"
         }
       },
       "required": [
         "rule_id",
         "requirement",
-        "treatment",
-        "review_state",
         "source"
       ],
       "title": "RuleRecord",
       "type": "object"
-    },
-    "RuleTreatment": {
-      "enum": [
-        "deterministic",
-        "human_review"
-      ],
-      "title": "RuleTreatment",
-      "type": "string"
     },
     "SourceLocation": {
       "additionalProperties": false,

@@ -1,46 +1,5 @@
 {
   "$defs": {
-    "ExpectedCounts": {
-      "additionalProperties": false,
-      "properties": {
-        "approved_words": {
-          "minimum": 0,
-          "title": "Approved Words",
-          "type": "integer"
-        },
-        "general_rules": {
-          "minimum": 0,
-          "title": "General Rules",
-          "type": "integer"
-        },
-        "numbered_rules": {
-          "minimum": 0,
-          "title": "Numbered Rules",
-          "type": "integer"
-        },
-        "unapproved_words": {
-          "minimum": 0,
-          "title": "Unapproved Words",
-          "type": "integer"
-        }
-      },
-      "required": [
-        "numbered_rules",
-        "general_rules",
-        "approved_words",
-        "unapproved_words"
-      ],
-      "title": "ExpectedCounts",
-      "type": "object"
-    },
-    "ReviewState": {
-      "enum": [
-        "draft",
-        "reviewed"
-      ],
-      "title": "ReviewState",
-      "type": "string"
-    },
     "SourceLocation": {
       "additionalProperties": false,
       "properties": {
@@ -117,14 +76,6 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
-    "count_reconciliation": {
-      "minLength": 1,
-      "title": "Count Reconciliation",
-      "type": "string"
-    },
-    "expected_counts": {
-      "$ref": "#/$defs/ExpectedCounts"
-    },
     "file_digests": {
       "additionalProperties": {
         "pattern": "^sha256:[0-9a-f]{64}$",
@@ -143,12 +94,6 @@
       "title": "Issue",
       "type": "integer"
     },
-    "published_counts": {
-      "$ref": "#/$defs/ExpectedCounts"
-    },
-    "review_state": {
-      "$ref": "#/$defs/ReviewState"
-    },
     "source": {
       "$ref": "#/$defs/SourceLocation"
     },
@@ -162,11 +107,7 @@
     "format_version",
     "standard_id",
     "issue",
-    "review_state",
     "source",
-    "expected_counts",
-    "published_counts",
-    "count_reconciliation",
     "file_digests"
   ],
   "title": "StandardManifest",

@@ -30,21 +30,21 @@
   {
     "fixture_id": "sanitized-latin-abbreviation",
     "synthetic": true,
-    "expected_changed_rule_ids": ["GR-6"],
+    "expected_changed_rule_ids": [],
     "initial_assistant_response": "Use a tool, e.g. a wrench.",
     "final_assistant_response": "Use a tool, for example, a wrench."
   },
   {
     "fixture_id": "sanitized-inclusive-language",
     "synthetic": true,
-    "expected_changed_rule_ids": ["GR-7"],
+    "expected_changed_rule_ids": [],
     "initial_assistant_response": "The operator puts his tools in the box.",
     "final_assistant_response": "Operators put their tools in the box."
   },
   {
     "fixture_id": "sanitized-that-clause",
     "synthetic": true,
-    "expected_changed_rule_ids": ["GR-1"],
+    "expected_changed_rule_ids": [],
     "initial_assistant_response": "Make sure the valve is open.",
     "final_assistant_response": "Make sure that the valve is open."
   },
@@ -65,7 +65,7 @@
   {
     "fixture_id": "sanitized-condition-comma",
     "synthetic": true,
-    "expected_changed_rule_ids": ["5.4"],
+    "expected_changed_rule_ids": [],
     "initial_assistant_response": "1. If the light comes on stop the test.",
     "final_assistant_response": "1. If the light comes on, stop the test."
   },
