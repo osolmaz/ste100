@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from ste100.checker import analyze
-from ste100.contracts import Rewriter
+from ste100.contracts import Detector, Rewriter
 from ste100.models import AnalysisResult, ByteRange, FindingKind, ProjectDictionary
 from ste100.protection import ProtectedContentError, ProtectedDocument, protect_text
 from ste100.standard import StandardPack
@@ -45,6 +45,7 @@ def rewrite_candidate(
     text: str,
     *,
     rewriter: Rewriter,
+    detector: Detector | None = None,
     standard: StandardPack | None = None,
     project_dictionary: ProjectDictionary | None = None,
     caller_ranges: tuple[ByteRange, ...] = (),
@@ -52,10 +53,13 @@ def rewrite_candidate(
 ) -> RewriteOutcome:
     """Create and recheck a candidate; this function never certifies STE compliance."""
 
+    if use_detector_hints and detector is None:
+        raise ValueError("detector hints require a configured detector")
     source_analysis = analyze(
         text,
         standard=standard,
         project_dictionary=project_dictionary,
+        detector=detector,
     )
     protected = protect_text(
         text,
@@ -81,6 +85,7 @@ def rewrite_candidate(
         candidate,
         standard=standard,
         project_dictionary=project_dictionary,
+        detector=detector,
     )
     source_violations = _deterministic_violations(source_analysis)
     candidate_violations = _deterministic_violations(candidate_analysis)

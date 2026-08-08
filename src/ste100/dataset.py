@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import hashlib
-import re
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Sequence
 from itertools import pairwise
 
 from ste100.document import slice_bytes
 from ste100.models import DatasetRecord, ProtectedSpan
+from ste100.protected_values import protected_occurrences
 from ste100.standard import ValidationIssue, ValidationReport
 
 
@@ -108,15 +108,6 @@ def _protected_original(
     return original
 
 
-def _protected_value_pattern(value: str, kind: str) -> str:
-    escaped = re.escape(value)
-    if kind == "url":
-        return rf"(?<!\S){escaped}(?=$|\s|[.,;:!?])"
-    prefix = r"(?<!\w)" if value[0].isalnum() or value[0] == "_" else ""
-    suffix = r"(?!\w)" if value[-1].isalnum() or value[-1] == "_" else ""
-    return f"{prefix}{escaped}{suffix}"
-
-
 def _check_target_values(
     record: DatasetRecord,
     protected_values: Sequence[tuple[str, str]],
@@ -125,19 +116,7 @@ def _check_target_values(
     if record.target_text is None or not protected_values:
         return
     originals = [value for value, _ in protected_values]
-    kinds_by_value = {value: kind for value, kind in protected_values}
-    alternatives = sorted(kinds_by_value, key=lambda value: (-len(value), value))
-    named_patterns = [
-        f"(?P<value{index}>{_protected_value_pattern(value, kinds_by_value[value])})"
-        for index, value in enumerate(alternatives)
-    ]
-    pattern = re.compile("|".join(named_patterns))
-    names = {f"value{index}": value for index, value in enumerate(alternatives)}
-    occurrences: list[str] = []
-    for match in pattern.finditer(record.target_text):
-        if match.lastgroup is None:
-            raise RuntimeError("protected-value pattern did not identify its match")
-        occurrences.append(names[match.lastgroup])
+    occurrences = protected_occurrences(record.target_text, protected_values)
     if Counter(occurrences) != Counter(originals):
         _issue(
             issues,

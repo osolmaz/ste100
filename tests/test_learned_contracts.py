@@ -9,7 +9,7 @@ import pytest
 from pydantic import ValidationError
 
 from ste100.bootstrap import weak_annotations
-from ste100.contracts import StaticRewriter
+from ste100.contracts import DetectorPrediction, StaticDetector, StaticRewriter
 from ste100.model_release import validate_model_release
 from ste100.models import Finding, ModelManifest
 from ste100.protection import protect_text
@@ -40,8 +40,22 @@ def test_rewriter_hints_default_to_disabled() -> None:
     assert unhinted.seen_findings == ()
 
     hinted = _CapturingRewriter(model_id="hinted", candidate=protected.masked_text)
-    rewrite_candidate(text, rewriter=hinted, use_detector_hints=True)
-    assert any(finding.rule_id == "4.2" for finding in hinted.seen_findings)
+    detector = StaticDetector(
+        model_id="detector-test",
+        predictions=(
+            DetectorPrediction(rule_id="3.6", score=0.8, message="Possible passive voice."),
+        ),
+    )
+    rewrite_candidate(
+        text,
+        rewriter=hinted,
+        detector=detector,
+        use_detector_hints=True,
+    )
+    assert any(finding.model_id == "detector-test" for finding in hinted.seen_findings)
+
+    with pytest.raises(ValueError, match="configured detector"):
+        rewrite_candidate(text, rewriter=hinted, use_detector_hints=True)
 
 
 def test_rewriter_output_is_untrusted_protected_and_rechecked() -> None:

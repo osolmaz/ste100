@@ -128,6 +128,16 @@ def test_protection_rejects_drop_duplicate_reorder_and_unknown() -> None:
             protected.restore(candidate)
 
 
+def test_raw_protected_copy_beside_sentinel_is_rejected() -> None:
+    protected = protect_text("Install UNIT_A now.")
+    candidate = protected.masked_text.replace(
+        protected.sentinels[0],
+        f"UNIT_A {protected.sentinels[0]}",
+    )
+    with pytest.raises(ProtectedContentError, match="duplicated"):
+        protected.restore(candidate)
+
+
 def test_overlapping_caller_ranges_are_rejected() -> None:
     with pytest.raises(ProtectedContentError, match="overlap"):
         protect_text(
