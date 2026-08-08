@@ -39,22 +39,29 @@ class LinguisticAnalyzer(Protocol):
 
 
 class SpacyAnalyzer:
-    """Adapt an installed spaCy English pipeline to stable checker records."""
+    """Adapt the pinned spaCy English pipeline to stable checker records."""
 
-    def __init__(self, model_name: str = "en_core_web_sm") -> None:
+    _MODEL_NAME = "en_core_web_sm"
+    _MODEL_VERSION = "3.8.0"
+
+    def __init__(self) -> None:
         try:
             import spacy
         except ImportError as error:  # pragma: no cover - depends on optional installation
             raise RuntimeError("install the 'spacy' extra to use linguistic checks") from error
         try:
-            self._pipeline = spacy.load(model_name)
+            self._pipeline = spacy.load(self._MODEL_NAME)
         except OSError as error:  # pragma: no cover - depends on optional installation
-            raise RuntimeError(f"spaCy pipeline is not installed: {model_name}") from error
+            raise RuntimeError(f"spaCy pipeline is not installed: {self._MODEL_NAME}") from error
         components = set(self._pipeline.pipe_names)
         if "parser" not in components or not {"tagger", "morphologizer"} & components:
             raise RuntimeError("spaCy pipeline must provide a parser and a POS-producing component")
         version = self._pipeline.meta.get("version", "unknown")
-        self._analyzer_id = f"spacy:{model_name}:{version}"
+        if version != self._MODEL_VERSION:
+            raise RuntimeError(
+                f"spaCy pipeline version must be {self._MODEL_VERSION}, got {version}"
+            )
+        self._analyzer_id = f"spacy:{self._MODEL_NAME}:{version}"
 
     @property
     def analyzer_id(self) -> str:

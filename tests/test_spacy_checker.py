@@ -13,7 +13,7 @@ from ste100.standard import load_bundled_standard
 
 @pytest.fixture(scope="module")
 def analyzer() -> SpacyAnalyzer:
-    return SpacyAnalyzer("en_core_web_sm")
+    return SpacyAnalyzer()
 
 
 def _rule_findings(text: str, rule_id: str, analyzer: SpacyAnalyzer) -> list[Finding]:
@@ -96,6 +96,20 @@ def test_approved_verb_form_is_not_rejected(analyzer: SpacyAnalyzer) -> None:
     assert _rule_findings("The technician removed the panel.", "3.1", analyzer) == []
 
 
+def test_approved_comparative_form_is_not_rejected(analyzer: SpacyAnalyzer) -> None:
+    assert _rule_findings("The hole is deeper.", "1.4", analyzer) == []
+
+
+def test_unapproved_nontechnical_part_of_speech_is_conclusive(
+    analyzer: SpacyAnalyzer,
+) -> None:
+    findings = _rule_findings("The movement is abrupt.", "1.1", analyzer)
+    assert any(
+        finding.excerpt == "abrupt" and finding.kind is FindingKind.VIOLATION
+        for finding in findings
+    )
+
+
 def test_approved_word_in_unapproved_part_of_speech_fails(analyzer: SpacyAnalyzer) -> None:
     finding = _rule_findings("The use is clear.", "1.2", analyzer)[0]
     assert finding.excerpt == "use"
@@ -149,9 +163,23 @@ def test_spacy_pipeline_requires_parser_and_pos_component(
         lambda _: SimpleNamespace(pipe_names=components, meta={}),
     )
     with pytest.raises(RuntimeError, match="parser and a POS-producing component"):
-        SpacyAnalyzer("incomplete")
+        SpacyAnalyzer()
 
 
-def test_missing_spacy_pipeline_has_clear_error() -> None:
+def test_spacy_pipeline_version_is_pinned(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        spacy,
+        "load",
+        lambda _: SimpleNamespace(pipe_names=("parser", "tagger"), meta={"version": "3.7.0"}),
+    )
+    with pytest.raises(RuntimeError, match=r"version must be 3\.8\.0"):
+        SpacyAnalyzer()
+
+
+def test_missing_spacy_pipeline_has_clear_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    def missing(_: str) -> None:
+        raise OSError("missing")
+
+    monkeypatch.setattr(spacy, "load", missing)
     with pytest.raises(RuntimeError, match="pipeline is not installed"):
-        SpacyAnalyzer("missing_ste100_test_pipeline")
+        SpacyAnalyzer()

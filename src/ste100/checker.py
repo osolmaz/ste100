@@ -36,7 +36,7 @@ _CONTRACTION_RE = re.compile(
     rf"(?:he|she|it|that|there|what|where|when|who|how|here|why|let){_APOSTROPHE}s)\b",
     re.IGNORECASE,
 )
-_LEXICAL_RE = re.compile(r"^[A-Za-z]+(?:'[A-Za-z]+)?$")
+_LEXICAL_RE = re.compile(r"^[A-Za-z]+(?:'[A-Za-z]+)?(?:-[A-Za-z]+)*$")
 _GROUPED_ELEMENT_RE = re.compile(
     r"\b(?:[A-Z][a-z]+|[A-Z]{2,})(?:\s+(?:[A-Z][a-z]+|[A-Z]{2,})){1,}\b"
 )
@@ -282,13 +282,16 @@ def _unapproved_findings(
 ) -> list[Finding]:
     alternatives = sorted({alternative for entry in entries for alternative in entry.alternatives})
     suffix = f" Use: {', '.join(alternatives)}." if alternatives else ""
-    message = f"{token!r} is unapproved.{suffix}"
+    message = (
+        f"{token!r} is listed as unapproved.{suffix} "
+        "Review whether this use is approved project terminology."
+    )
     return [
         _finding(
             text,
             rule_id=rule_id,
             checker_id="vocabulary" if rule_id == "1.1" else "unapproved_vocabulary",
-            kind=FindingKind.VIOLATION,
+            kind=FindingKind.HUMAN_REVIEW,
             message=message,
             byte_range=byte_range,
         )
@@ -663,6 +666,23 @@ def _token_linguistic_findings(  # noqa: C901 -- Independent linguistic clauses.
                 byte_range=token.byte_range,
             )
         )
+    unapproved_for_pos = tuple(
+        entry
+        for entry in entries
+        if entry.status == "unapproved" and actual_pos in entry.parts_of_speech
+    )
+    if actual_pos not in {None, "noun", "verb"} and unapproved_for_pos:
+        for rule_id, checker_id in (("1.1", "vocabulary_pos"), ("1.6", "unapproved_pos")):
+            findings.append(
+                _finding(
+                    document.text,
+                    rule_id=rule_id,
+                    checker_id=checker_id,
+                    kind=FindingKind.VIOLATION,
+                    message=f"{token.text!r} is unapproved as a {actual_pos}.",
+                    byte_range=token.byte_range,
+                )
+            )
     lemma_entries = tuple(
         entry
         for entry in index.get(token.lemma, ())

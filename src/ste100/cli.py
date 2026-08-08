@@ -75,7 +75,7 @@ def _analyze(args: argparse.Namespace) -> int:
             return 2
     path = Path(args.file)
     text = sys.stdin.read() if str(path) == "-" else path.read_text(encoding="utf-8")
-    analyzer = SpacyAnalyzer(args.spacy_model) if args.spacy else None
+    analyzer = SpacyAnalyzer() if args.spacy else None
     result = analyze(
         text,
         standard=standard,
@@ -146,7 +146,6 @@ def _parser() -> argparse.ArgumentParser:
     analyze_parser.add_argument("--standard-pack")
     analyze_parser.add_argument("--project-dictionary")
     analyze_parser.add_argument("--spacy", action="store_true")
-    analyze_parser.add_argument("--spacy-model", default="en_core_web_sm")
     analyze_parser.add_argument("--format", choices=("text", "json"), default="text")
     analyze_parser.set_defaults(handler=_analyze)
 

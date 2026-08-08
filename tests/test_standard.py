@@ -137,6 +137,23 @@ def test_bundled_dictionary_has_unique_ids_and_status_pos_keys() -> None:
     assert all(not entry.approved_meanings for entry in dictionary if entry.status == "approved")
 
 
+def test_bundled_approved_forms_preserve_delimiters_and_hyphens() -> None:
+    index = load_bundled_standard().dictionary_by_word
+    deep = next(
+        entry
+        for entry in index["deep"]
+        if entry.status == "approved" and "adjective" in entry.parts_of_speech
+    )
+    de_energize = next(
+        entry
+        for entry in index["de-energize"]
+        if entry.status == "approved" and "verb" in entry.parts_of_speech
+    )
+    assert {"deeper", "deepest"} <= set(deep.approved_forms)
+    assert "de-energizes" in de_energize.approved_forms
+    assert all(not form.startswith("(") and not form.endswith(")") for form in deep.approved_forms)
+
+
 def test_bundled_deterministic_examples_match_their_labels() -> None:
     examples = load_bundled_standard().examples
     separately_tested_rules = {"5.5", "GR-1", "GR-6", "GR-7"}

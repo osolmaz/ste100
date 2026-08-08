@@ -100,11 +100,11 @@ The runtime includes checks for:
 - unapproved phrasal verbs in the dictionary
 - selected general recommendations for `that`, Latin abbreviations, and inclusive wording
 
-A checker abstains when its evidence cannot prove a violation. Absence of a partial-check finding never becomes a pass for the complete rule.
+A checker abstains when its evidence cannot prove a violation. Unapproved nouns and verbs remain in human review until configured terminology or linguistic context resolves their use because they can be technical terms. Absence of a partial-check finding never becomes a pass for the complete rule.
 
 ## Optional spaCy checks
 
-The optional analyzer is pinned to spaCy 3.8.11 and `en_core_web_sm` 3.8.0. It supplies tokenization, lemmas, part-of-speech tags, morphology, dependency relations, and sentence boundaries.
+The optional analyzer is pinned to spaCy 3.8.11 and `en_core_web_sm` 3.8.0. It supplies tokenization, lemmas, part-of-speech tags, morphology, dependency relations, and sentence boundaries. The CLI does not accept another model name or path, and startup rejects a different model version or a pipeline without both dependency parsing and part-of-speech analysis.
 
 spaCy does not decide compliance. Checker code applies explicit rules to its evidence. Ambiguous cases produce `human_review`. Examples include descriptive passive voice with an unknown agent, an `-ing` form that can be a technical noun, and two procedure actions that can occur at the same time.
 
