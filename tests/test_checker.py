@@ -228,6 +228,13 @@ def test_exact_length_boundaries_pass() -> None:
     assert _findings(descriptive, "6.3") == []
 
 
+def test_protected_numbers_still_count_as_words() -> None:
+    text = " ".join(str(index) for index in range(1, 27)) + "."
+    finding = next(item for item in analyze(text).findings if item.rule_id == "6.3")
+    assert finding.kind is FindingKind.VIOLATION
+    assert "mechanical count of 26" in finding.message
+
+
 def test_note_uses_descriptive_limit() -> None:
     note = "NOTE: " + " ".join(f"word{index}" for index in range(26)) + "."
     finding = next(item for item in analyze(note).findings if item.rule_id == "6.3")
