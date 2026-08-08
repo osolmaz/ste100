@@ -133,7 +133,7 @@
       "type": "string"
     },
     "issue": {
-      "minimum": 1,
+      "const": 9,
       "title": "Issue",
       "type": "integer"
     },

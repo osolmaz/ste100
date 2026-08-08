@@ -91,7 +91,7 @@
       "type": "string"
     },
     "standard_issue": {
-      "minimum": 1,
+      "const": 9,
       "title": "Standard Issue",
       "type": "integer"
     },

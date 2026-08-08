@@ -77,7 +77,7 @@ class ExpectedCounts(StrictModel):
 class StandardManifest(StrictModel):
     format_version: Literal["1"]
     standard_id: Literal["ASD-STE100"]
-    issue: Annotated[int, Field(ge=1)]
+    issue: Literal[9]
     review_state: ReviewState
     source: SourceLocation
     expected_counts: ExpectedCounts
@@ -261,7 +261,7 @@ class ModelManifest(StrictModel):
     release: Annotated[str, Field(pattern=r"^\d+\.\d+\.\d+$")]
     artifact_digest: Digest
     evaluation_digest: Digest
-    standard_issue: Annotated[int, Field(ge=1)]
+    standard_issue: Literal[9]
     base_model_id: Annotated[str, Field(min_length=1)]
     base_model_revision: Annotated[str, Field(min_length=1)]
     pretraining_contamination: Literal["known_absent", "known_present", "unknown"]
