@@ -100,6 +100,33 @@ def test_manifest_counts_must_match_artifacts_and_published_differences_warn(
         StandardManifest.model_validate(manifest)
 
 
+def test_qualifier_does_not_make_a_duplicate_dictionary_key_valid(
+    tmp_path: Path,
+) -> None:
+    root = make_standard_pack(tmp_path / "pack")
+    dictionary_path = root / "dictionary.json"
+    dictionary = json.loads(dictionary_path.read_text(encoding="utf-8"))
+    duplicate = dict(dictionary[0])
+    duplicate["entry_id"] = "install-v-qualified"
+    duplicate["qualifier"] = "install in"
+    dictionary.append(duplicate)
+    dictionary_path.write_text(json.dumps(dictionary, indent=2) + "\n", encoding="utf-8")
+
+    manifest_path = root / "standard.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["expected_counts"]["approved_words"] += 1
+    manifest["file_digests"]["dictionary.json"] = (
+        "sha256:" + hashlib.sha256(dictionary_path.read_bytes()).hexdigest()
+    )
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+
+    report = validate_standard_pack(root)
+    assert any(
+        issue.code == "duplicate_id" and "status/headword/part-of-speech" in issue.message
+        for issue in report.issues
+    )
+
+
 def test_bundled_runtime_pack_is_reproducible(tmp_path: Path) -> None:
     output = tmp_path / "issue9"
     write_runtime_pack(_SOURCE, output)
@@ -117,7 +144,7 @@ def test_bundled_runtime_pack_is_valid_and_source_traceable() -> None:
     assert len(pack.conformance) == 61
     assert len(pack.examples) >= 15
     assert sum(entry.status == "approved" for entry in pack.dictionary) == 878
-    assert sum(entry.status == "unapproved" for entry in pack.dictionary) == 1318
+    assert sum(entry.status == "unapproved" for entry in pack.dictionary) == 1315
     assert pack.manifest.published_counts.approved_words == 875
     assert pack.manifest.published_counts.unapproved_words == 1274
     assert "All source-traceable rows are retained" in pack.manifest.count_reconciliation
@@ -130,10 +157,7 @@ def test_bundled_runtime_pack_is_valid_and_source_traceable() -> None:
 def test_bundled_dictionary_has_unique_ids_and_status_pos_keys() -> None:
     dictionary = load_bundled_standard().dictionary
     assert len({entry.entry_id for entry in dictionary}) == len(dictionary)
-    keys = {
-        (entry.word.casefold(), entry.qualifier, entry.status, entry.parts_of_speech)
-        for entry in dictionary
-    }
+    keys = {(entry.word.casefold(), entry.status, entry.parts_of_speech) for entry in dictionary}
     assert len(keys) == len(dictionary)
     assert all(entry.word == entry.word.casefold() for entry in dictionary)
     assert all(entry.parts_of_speech for entry in dictionary)

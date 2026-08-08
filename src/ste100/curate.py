@@ -60,7 +60,7 @@ _CHECKERS: dict[str, tuple[str, ...]] = {
     "1.13": ("technical_verb_as_noun",),
     "1.14": ("american_spelling",),
     "2.1": ("multiword_term_length",),
-    "3.1": ("approved_verb_form",),
+    "3.1": ("approved_form",),
     "3.2": ("verb_form",),
     "3.4": ("complex_verb",),
     "3.5": ("ing_form",),
@@ -260,27 +260,60 @@ def _entry_id(status: str, word: str, part_of_speech: str, row_number: int) -> s
     return f"{slug}-{hashlib.sha256(raw).hexdigest()[:12]}"
 
 
+def _merge_dictionary_entries(
+    existing: DictionaryEntry, incoming: DictionaryEntry
+) -> DictionaryEntry:
+    if existing.qualifier is None and incoming.qualifier is None:
+        raise ValueError(f"duplicate dictionary row without a qualifier: {existing.word!r}")
+    if existing.qualifier is not None and incoming.qualifier is not None:
+        raise ValueError(f"duplicate qualified dictionary row: {existing.word!r}")
+    if existing.source.page != incoming.source.page:
+        raise ValueError(f"duplicate dictionary rows cross pages: {existing.word!r}")
+    qualified = existing if existing.qualifier is not None else incoming
+    base = incoming if existing.qualifier is not None else existing
+    source_rows = "+".join(
+        value for value in (existing.source.row, incoming.source.row) if value is not None
+    )
+    return base.model_copy(
+        update={
+            "approved_forms": tuple(
+                dict.fromkeys(
+                    (*base.approved_forms, qualified.qualifier, *qualified.approved_forms)
+                )
+            ),
+            "alternatives": tuple(dict.fromkeys((*base.alternatives, *qualified.alternatives))),
+            "source": base.source.model_copy(update={"row": source_rows}),
+        }
+    )
+
+
 def build_dictionary(text: str) -> tuple[DictionaryEntry, ...]:
     """Build source-traceable runtime dictionary rows."""
 
     digest = sha256_digest(text.encode("utf-8"))
     entries: list[DictionaryEntry] = []
+    positions: dict[tuple[str, str, str], int] = {}
     for row_number, row in enumerate(_dictionary_rows(text), 1):
         word, aliases, qualifier = _canonical_word(row.word)
-        entries.append(
-            DictionaryEntry(
-                entry_id=_entry_id(row.status, word, row.part_of_speech, row_number),
-                word=word,
-                qualifier=qualifier,
-                status=row.status,
-                parts_of_speech=(row.part_of_speech,),
-                approved_meanings=(),
-                approved_forms=_forms(row, aliases),
-                alternatives=_alternatives(row),
-                review_state=ReviewState.REVIEWED,
-                source=_source(digest, row.page, row=f"dictionary-row-{row_number}"),
-            )
+        entry = DictionaryEntry(
+            entry_id=_entry_id(row.status, word, row.part_of_speech, row_number),
+            word=word,
+            qualifier=qualifier,
+            status=row.status,
+            parts_of_speech=(row.part_of_speech,),
+            approved_meanings=(),
+            approved_forms=_forms(row, aliases),
+            alternatives=_alternatives(row),
+            review_state=ReviewState.REVIEWED,
+            source=_source(digest, row.page, row=f"dictionary-row-{row_number}"),
         )
+        key = (entry.status, entry.word, row.part_of_speech)
+        position = positions.get(key)
+        if position is None:
+            positions[key] = len(entries)
+            entries.append(entry)
+        else:
+            entries[position] = _merge_dictionary_entries(entries[position], entry)
     return tuple(entries)
 
 

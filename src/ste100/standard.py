@@ -239,8 +239,7 @@ def _check_ids(artifacts: _Artifacts, issues: list[ValidationIssue]) -> None:
     for values, label, path in groups:
         _check_duplicates(issues, values, label=label, path=path)
     dictionary_keys = [
-        f"{entry.status}:{entry.word.casefold()}:{entry.qualifier or ''}:"
-        f"{','.join(entry.parts_of_speech)}"
+        f"{entry.status}:{entry.word.casefold()}:{','.join(entry.parts_of_speech)}"
         for entry in artifacts.dictionary
     ]
     _check_duplicates(

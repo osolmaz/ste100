@@ -134,7 +134,7 @@
   {
     "coverage_scope": "partial",
     "deterministic_checkers": [
-      "approved_verb_form"
+      "approved_form"
     ],
     "reason": "The named mechanical clause is checked; remaining interpretation needs review.",
     "release_gate": "human_review",

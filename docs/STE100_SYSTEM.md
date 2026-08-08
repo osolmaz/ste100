@@ -34,7 +34,7 @@ conformance.json
 
 `standard.json` records the source digest, Issue 9 identifier, review state, artifact digests, extracted counts, published counts, and a reconciliation note. Runtime loading checks every digest and rejects missing, extra, malformed, duplicate, unreviewed, or path-escaping artifacts.
 
-Issue 9 prints totals of 875 approved and 1,274 unapproved words. The source table parser produces 878 approved and 1,318 unapproved part-of-speech rows after repairing wrapped headwords. The runtime keeps valid source rows instead of deleting entries to force count agreement. Pack validation reports the difference as a warning and checks that the manifest agrees with the artifacts.
+Issue 9 prints totals of 875 approved and 1,274 unapproved words. The source table parser produces 878 approved and 1,315 unapproved part-of-speech rows after repairing wrapped headwords. The runtime keeps valid source rows instead of deleting entries to force count agreement. Pack validation reports the difference as a warning and checks that the manifest agrees with the artifacts.
 
 Each dictionary entry contains:
 
