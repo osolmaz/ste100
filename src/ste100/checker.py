@@ -605,11 +605,16 @@ def _visible_linguistic_tokens(
     sentence: LinguisticSentence,
     protected: tuple[ByteRange, ...],
     project_ranges: tuple[ByteRange, ...],
+    code_ranges: tuple[ByteRange, ...],
 ) -> tuple[LinguisticToken, ...]:
     return tuple(
         token
         for token in sentence.tokens
-        if not _overlaps(token.byte_range, protected) or _overlaps(token.byte_range, project_ranges)
+        if not _overlaps(token.byte_range, code_ranges)
+        and (
+            not _overlaps(token.byte_range, protected)
+            or _overlaps(token.byte_range, project_ranges)
+        )
     )
 
 
@@ -619,6 +624,7 @@ def _linguistic_findings(  # noqa: C901 -- Independent sentence-level checks.
     project: ProjectDictionary | None,
     analyzer: LinguisticAnalyzer | None,
     protected: tuple[ByteRange, ...],
+    code_ranges: tuple[ByteRange, ...],
 ) -> tuple[list[Finding], set[str]]:
     if analyzer is None:
         return [], set()
@@ -643,7 +649,9 @@ def _linguistic_findings(  # noqa: C901 -- Independent sentence-level checks.
     project_ranges = tuple(match.byte_range for match in project_matches)
     index = standard.dictionary_by_word
     for sentence in analyzer.analyze(document.text):
-        visible_tokens = _visible_linguistic_tokens(sentence, protected, project_ranges)
+        visible_tokens = _visible_linguistic_tokens(
+            sentence, protected, project_ranges, code_ranges
+        )
         if not visible_tokens:
             continue
         sentence = LinguisticSentence(
@@ -999,6 +1007,7 @@ def analyze(
         project_dictionary,
         linguistic_analyzer,
         protected_ranges,
+        code_ranges,
     )
     findings.extend(linguistic_findings)
     applicable.update(linguistic_applicable)
