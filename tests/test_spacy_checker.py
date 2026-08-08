@@ -63,12 +63,13 @@ def test_manually_verified_passive_instruction_fails(analyzer: SpacyAnalyzer) ->
     imperative = _rule_findings(text, "5.3", analyzer)
     passive = _rule_findings(text, "3.6", analyzer)
     assert imperative[0].kind is FindingKind.VIOLATION
+    assert len(passive) == 1
     assert {item.kind for item in passive} == {FindingKind.VIOLATION}
 
 
 def test_descriptive_passive_abstains_for_agent_review(analyzer: SpacyAnalyzer) -> None:
     findings = _rule_findings("The panel was removed.", "3.6", analyzer)
-    assert findings
+    assert len(findings) == 1
     assert {item.kind for item in findings} == {FindingKind.HUMAN_REVIEW}
 
 
@@ -180,6 +181,8 @@ def test_spacy_checks_ignore_inline_and_fenced_code(analyzer: SpacyAnalyzer) -> 
         if finding.excerpt in {"removing", "removed"}
         and finding.rule_id in {"3.1", "3.2", "3.5", "3.6"}
     ]
+    protected_root = analyze("1. `Open` the valve.", linguistic_analyzer=analyzer)
+    assert not [finding for finding in protected_root.findings if finding.rule_id == "5.3"]
 
 
 def test_spacy_rules_remain_human_review_when_analyzer_is_absent() -> None:

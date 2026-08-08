@@ -629,6 +629,33 @@ def _visible_linguistic_tokens(
     )
 
 
+def _passive_findings(
+    document: Document,
+    sentence: LinguisticSentence,
+    block: Block | None,
+) -> list[Finding]:
+    constructions: dict[int, LinguisticToken] = {}
+    for token in sentence.tokens:
+        if token.dependency in {"auxpass", "nsubjpass"}:
+            constructions.setdefault(token.head_index, token)
+    kind = (
+        FindingKind.VIOLATION
+        if block is not None and block.kind is BlockKind.PROCEDURE
+        else FindingKind.HUMAN_REVIEW
+    )
+    return [
+        _finding(
+            document.text,
+            rule_id="3.6",
+            checker_id="passive_voice",
+            kind=kind,
+            message="Review passive voice; procedures must use active voice.",
+            byte_range=token.byte_range,
+        )
+        for token in constructions.values()
+    ]
+
+
 def _linguistic_findings(  # noqa: C901 -- Independent sentence-level checks.
     document: Document,
     standard: StandardPack,
@@ -651,6 +678,9 @@ def _linguistic_findings(  # noqa: C901 -- Independent sentence-level checks.
     project_ranges = tuple(match.byte_range for match in project_matches)
     index = standard.dictionary_by_word
     for sentence in analyzer.analyze(document.text):
+        syntax_incomplete = any(
+            _overlaps(token.byte_range, code_ranges) for token in sentence.tokens
+        )
         visible_tokens = _visible_linguistic_tokens(
             sentence, protected, project_ranges, code_ranges
         )
@@ -663,9 +693,12 @@ def _linguistic_findings(  # noqa: C901 -- Independent sentence-level checks.
         )
         imperative = _is_imperative(sentence)
         sentence_block = _block_for_token(document, sentence.tokens[0]) if sentence.tokens else None
-        findings.extend(_omitted_that_findings(document, sentence))
+        if not syntax_incomplete:
+            findings.extend(_omitted_that_findings(document, sentence))
+        findings.extend(_passive_findings(document, sentence, sentence_block))
         if (
-            sentence_block is not None
+            not syntax_incomplete
+            and sentence_block is not None
             and sentence_block.kind is BlockKind.PROCEDURE
             and not imperative
         ):
@@ -679,7 +712,12 @@ def _linguistic_findings(  # noqa: C901 -- Independent sentence-level checks.
                     byte_range=sentence.byte_range,
                 )
             )
-        if sentence_block is not None and sentence_block.kind is BlockKind.NOTE and imperative:
+        if (
+            not syntax_incomplete
+            and sentence_block is not None
+            and sentence_block.kind is BlockKind.NOTE
+            and imperative
+        ):
             findings.append(
                 _finding(
                     document.text,
@@ -691,7 +729,8 @@ def _linguistic_findings(  # noqa: C901 -- Independent sentence-level checks.
                 )
             )
         if (
-            sentence_block is not None
+            not syntax_incomplete
+            and sentence_block is not None
             and sentence_block.kind in {BlockKind.WARNING, BlockKind.CAUTION}
             and not imperative
             and not re.match(
@@ -716,7 +755,8 @@ def _linguistic_findings(  # noqa: C901 -- Independent sentence-level checks.
             if token.pos == "VERB" and token.dependency in {"ROOT", "conj"}
         ]
         if (
-            sentence_block is not None
+            not syntax_incomplete
+            and sentence_block is not None
             and sentence_block.kind is BlockKind.PROCEDURE
             and len(verb_actions) > 1
         ):
@@ -735,7 +775,6 @@ def _linguistic_findings(  # noqa: C901 -- Independent sentence-level checks.
                 _token_linguistic_findings(
                     document,
                     token,
-                    sentence_block,
                     index,
                     project,
                     project_matches,
@@ -748,7 +787,6 @@ def _linguistic_findings(  # noqa: C901 -- Independent sentence-level checks.
 def _token_linguistic_findings(  # noqa: C901 -- Independent linguistic clauses.
     document: Document,
     token: LinguisticToken,
-    block: Block | None,
     index: dict[str, tuple[DictionaryEntry, ...]],
     project: ProjectDictionary | None,
     project_matches: tuple[TermMatch, ...],
@@ -836,22 +874,6 @@ def _token_linguistic_findings(  # noqa: C901 -- Independent linguistic clauses.
                     byte_range=token.byte_range,
                 )
             )
-    if token.dependency in {"auxpass", "nsubjpass"}:
-        kind = (
-            FindingKind.VIOLATION
-            if block is not None and block.kind is BlockKind.PROCEDURE
-            else FindingKind.HUMAN_REVIEW
-        )
-        findings.append(
-            _finding(
-                document.text,
-                rule_id="3.6",
-                checker_id="passive_voice",
-                kind=kind,
-                message="Review passive voice; procedures must use active voice.",
-                byte_range=token.byte_range,
-            )
-        )
     if token.tag in {"VBG", "VBN"} and token.dependency in {"xcomp", "ccomp"}:
         findings.append(
             _finding(
