@@ -4,6 +4,7 @@ import pytest
 
 from ste100.models import ByteRange, ProjectDictionary, ProjectTerm
 from ste100.protection import ProtectedContentError, protect_text
+from ste100.standard import StandardPack
 from ste100.terminology import TermMatcher, validate_project_dictionary
 
 
@@ -61,6 +62,28 @@ def test_project_dictionary_rejects_long_and_ambiguous_terms() -> None:
     }
 
 
+def test_project_dictionary_checks_every_form_against_standard(
+    standard_pack: StandardPack,
+) -> None:
+    project = ProjectDictionary(
+        format_version="1",
+        terms=(
+            ProjectTerm(
+                term="fuel pump",
+                category="technical_noun",
+                approved_forms=("utilize",),
+                meaning="A pump for fuel",
+                source="glossary",
+            ),
+        ),
+    )
+    report = validate_project_dictionary(project, standard=standard_pack)
+    assert not report.valid
+    assert [(issue.code, issue.message) for issue in report.issues] == [
+        ("standard_conflict", "project term form is unapproved in the standard: utilize")
+    ]
+
+
 def test_protection_round_trip_preserves_all_facts() -> None:
     text = "Set FUEL_VALVE to 10 mm on the fuel pump; see https://example.com/x and `x += 1`."
     protected = protect_text(text, project_dictionary=_project())
@@ -88,11 +111,18 @@ def test_protection_rejects_drop_duplicate_reorder_and_unknown() -> None:
         protected.masked_text.replace(first, ""),
         protected.masked_text.replace(first, first + first),
         protected.masked_text.replace(first, "TEMP").replace(second, first).replace("TEMP", second),
-        protected.masked_text + " __STE100_9999__",
+        protected.masked_text + f" {protected.sentinel_prefix}9999__",
     ]
     for candidate in cases:
         with pytest.raises(ProtectedContentError):
             protected.restore(candidate)
+
+
+def test_literal_sentinel_shaped_source_text_round_trips() -> None:
+    text = "Keep __STE100_0000__ and __STE100_deadbeef0000_0000__ literal."
+    protected = protect_text(text)
+    assert protected.restore(protected.masked_text) == text
+    assert protected.sentinel_prefix not in text
 
 
 def test_caller_range_must_align_with_utf8_and_is_restored() -> None:

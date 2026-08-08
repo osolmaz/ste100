@@ -37,8 +37,16 @@ def test_cli_validates_pack_and_explains_bundled_rule(
 
     assert main(["explain", "8.1"]) == 0
     payload = json.loads(capsys.readouterr().out)
-    assert payload["rule"]["rule_id"] == "8.1"
+    assert payload["rule"] == {
+        "rule_id": "8.1",
+        "requirement": None,
+        "review_state": "reviewed_standard_pack_required",
+    }
     assert payload["conformance"]["coverage_scope"] == "full"
+
+    assert main(["explain", "8.1", "--standard-pack", str(pack)]) == 0
+    reviewed = json.loads(capsys.readouterr().out)
+    assert reviewed["rule"]["requirement"] == "Do not use semicolons."
 
     assert main(["explain", "99.1"]) == 1
     assert "Unknown rule" in capsys.readouterr().err

@@ -11,7 +11,6 @@ from ste100.document import char_to_byte_offsets, slice_bytes
 from ste100.models import ByteRange, ProjectDictionary, ProtectedSpan
 from ste100.terminology import TermMatcher
 
-_SENTINEL_RE = re.compile(r"__STE100_(\d{4})__")
 _CODE_RE = re.compile(r"```[\s\S]*?```|`[^`\n]+`")
 _URL_RE = re.compile(r"https?://[^\s<>]+")
 _NUMBER_RE = re.compile(r"(?<!\w)[+-]?\d+(?:[.,]\d+)?(?:\s*(?:°[CF]|%|[A-Za-z]{1,8}))?(?!\w)")
@@ -40,13 +39,15 @@ class ProtectedDocument:
     source_text: str
     masked_text: str
     spans: tuple[ProtectedSpan, ...]
+    sentinel_prefix: str
     sentinels: tuple[str, ...]
     originals: tuple[str, ...]
 
     def restore(self, candidate: str) -> str:
         """Validate all sentinels and restore the exact protected source strings."""
 
-        found = tuple(match.group() for match in _SENTINEL_RE.finditer(candidate))
+        pattern = re.compile(re.escape(self.sentinel_prefix) + r"\d{4}__")
+        found = tuple(match.group() for match in pattern.finditer(candidate))
         if found != self.sentinels:
             raise ProtectedContentError(
                 "protected sentinels were changed, dropped, duplicated, or reordered"
@@ -56,7 +57,7 @@ class ProtectedDocument:
             if restored.count(sentinel) != 1:
                 raise ProtectedContentError(f"expected exactly one occurrence of {sentinel}")
             restored = restored.replace(sentinel, original)
-        if _SENTINEL_RE.search(restored):
+        if pattern.search(restored):
             raise ProtectedContentError("candidate contains an unknown protected sentinel")
         return restored
 
@@ -76,6 +77,15 @@ def _digest(text: str) -> str:
 def _span_id(kind: ProtectedKind, byte_range: ByteRange, text: str) -> str:
     raw = f"{kind}\0{byte_range.start}\0{byte_range.end}\0{text}".encode()
     return f"span_{hashlib.sha256(raw).hexdigest()[:16]}"
+
+
+def _sentinel_prefix(text: str) -> str:
+    for nonce in range(1000):
+        digest = hashlib.sha256(f"{nonce}\0{text}".encode()).hexdigest()[:12]
+        prefix = f"__STE100_{digest}_"
+        if prefix not in text:
+            return prefix
+    raise ProtectedContentError("could not create a collision-free sentinel namespace")
 
 
 def _byte_to_char(text: str, offset: int) -> int:
@@ -166,13 +176,14 @@ def protect_text(
 
     selected = _select_non_overlapping(candidates)
     offsets = char_to_byte_offsets(text)
+    sentinel_prefix = _sentinel_prefix(text)
     masked_parts: list[str] = []
     spans: list[ProtectedSpan] = []
     sentinels: list[str] = []
     originals: list[str] = []
     cursor = 0
     for index, candidate in enumerate(selected):
-        sentinel = f"__STE100_{index:04d}__"
+        sentinel = f"{sentinel_prefix}{index:04d}__"
         original = text[candidate.start : candidate.end]
         byte_range = ByteRange(start=offsets[candidate.start], end=offsets[candidate.end])
         masked_parts.extend((text[cursor : candidate.start], sentinel))
@@ -192,6 +203,7 @@ def protect_text(
         source_text=text,
         masked_text="".join(masked_parts),
         spans=tuple(spans),
+        sentinel_prefix=sentinel_prefix,
         sentinels=tuple(sentinels),
         originals=tuple(originals),
     )

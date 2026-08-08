@@ -46,8 +46,12 @@ def main() -> int:
     if total == 0:
         print("mutation score unavailable: no mutants were generated", file=sys.stderr)
         return 1
-    score = 100.0 * (killed + timeout) / total
-    print(f"mutation score: {score:.2f}% ({killed + timeout}/{total})")
+    score = 100.0 * killed / total
+    print(
+        f"mutation score: {score:.2f}% ({killed}/{total}); survived={survived}, timeout={timeout}"
+    )
+    if timeout:
+        return 1
     return 0 if score >= args.min_kill_rate else 1
 
 

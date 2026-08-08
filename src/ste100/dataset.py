@@ -65,13 +65,20 @@ def _check_identity_and_annotations(
     text_size = len(record.text.encode("utf-8"))
     for annotation in record.annotations:
         byte_range = annotation.byte_range
-        if byte_range is not None and byte_range.end > text_size:
+        if byte_range is None:
+            continue
+        if byte_range.end > text_size:
             _issue(
                 issues,
                 "annotation_range",
                 "annotation range is outside source text",
                 record.record_id,
             )
+            continue
+        try:
+            slice_bytes(record.text, byte_range)
+        except ValueError as error:
+            _issue(issues, "annotation_range", str(error), record.record_id)
 
 
 def _protected_original(
