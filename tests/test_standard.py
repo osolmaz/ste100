@@ -100,15 +100,17 @@ def test_manifest_counts_must_match_artifacts_and_published_differences_warn(
         StandardManifest.model_validate(manifest)
 
 
-def test_qualifier_does_not_make_a_duplicate_dictionary_key_valid(
+def test_qualifier_and_pos_order_do_not_make_a_duplicate_key_valid(
     tmp_path: Path,
 ) -> None:
     root = make_standard_pack(tmp_path / "pack")
     dictionary_path = root / "dictionary.json"
     dictionary = json.loads(dictionary_path.read_text(encoding="utf-8"))
+    dictionary[0]["parts_of_speech"] = ["verb", "noun"]
     duplicate = dict(dictionary[0])
     duplicate["entry_id"] = "install-v-qualified"
     duplicate["qualifier"] = "install in"
+    duplicate["parts_of_speech"] = ["noun", "verb"]
     dictionary.append(duplicate)
     dictionary_path.write_text(json.dumps(dictionary, indent=2) + "\n", encoding="utf-8")
 

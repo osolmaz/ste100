@@ -578,7 +578,11 @@ def _is_imperative(sentence: LinguisticSentence) -> bool:
         ]
     if len(roots) != 1 or roots[0].tag != "VB":
         return False
-    return not any(token.dependency in {"nsubj", "nsubjpass"} for token in tokens)
+    root = roots[0]
+    return not any(
+        token.dependency in {"nsubj", "nsubjpass"} and token.head_index == root.token_index
+        for token in tokens
+    )
 
 
 def _omits_that_before_finite_clause(sentence: LinguisticSentence) -> bool:
