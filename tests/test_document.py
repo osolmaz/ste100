@@ -31,6 +31,15 @@ def test_sentence_splitter_does_not_split_common_abbreviations() -> None:
     ]
 
 
+def test_url_period_is_not_a_sentence_boundary() -> None:
+    text = "See https://example.com/path. Then continue."
+    ranges = sentence_ranges(text)
+    assert [text[start:end] for start, end in ranges] == [
+        "See https://example.com/path.",
+        "Then continue.",
+    ]
+
+
 def test_decimal_point_is_not_a_sentence_boundary() -> None:
     text = "Set the pressure to 1.5 bar. Then continue."
     ranges = sentence_ranges(text)
@@ -48,7 +57,7 @@ def test_word_count_exceptions_are_single_tokens() -> None:
     assert "(item 4)" in values
     assert "10 mm" in values
     assert '"ZONE A"' in values
-    assert "https://example.com." in values
+    assert "https://example.com" in values
 
 
 def test_colon_terminates_intro_before_vertical_list() -> None:
@@ -70,6 +79,17 @@ def test_parenthetical_prose_is_also_a_separate_sentence() -> None:
     ]
     assert document.sentences[0].word_count == 8
     assert document.sentences[1].word_count == 5
+
+
+def test_each_multiline_procedure_marker_is_not_a_sentence() -> None:
+    text = "1. First action.\n2. Second action.\na. Third action."
+    document = parse_document(text)
+    assert [sentence.text for sentence in document.sentences] == [
+        "1. First action.",
+        "2. Second action.",
+        "a. Third action.",
+    ]
+    assert [sentence.word_count for sentence in document.sentences] == [2, 2, 2]
 
 
 def test_procedure_marker_is_not_a_counted_word() -> None:

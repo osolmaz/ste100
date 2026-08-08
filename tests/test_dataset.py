@@ -143,6 +143,24 @@ def test_dataset_distinguishes_overlapping_protected_values() -> None:
     assert validate_dataset((record,)).valid
 
 
+def test_dataset_rejects_protected_value_embedded_in_modified_number() -> None:
+    measurement = ProtectedSpan(
+        span_id="span_7777777777777777",
+        kind="unit",
+        byte_range=ByteRange(start=0, end=5),
+        text_digest=_digest("10 mm"),
+    )
+    record = _record(
+        source_kind="technical_document",
+        source_id="changed-number",
+        text="10 mm",
+        protected_spans=(measurement,),
+        target_text="Use 110 mm.",
+    )
+    codes = {issue.code for issue in validate_dataset((record,)).issues}
+    assert "protected_target" in codes
+
+
 def test_dataset_detects_group_source_family_time_and_text_leakage() -> None:
     train = _record(source_kind="technical_document", source_id="doc", text="Same text.")
     test = _record(
@@ -306,6 +324,27 @@ def test_synthetic_child_must_remain_in_parent_split() -> None:
     )
     codes = {issue.code for issue in validate_dataset((parent, child)).issues}
     assert "synthetic_split_leakage" in codes
+
+
+def test_synthetic_provenance_rejects_self_and_mutual_cycles() -> None:
+    self_parent = _record(
+        source_kind="synthetic",
+        source_id="self",
+        text="Self parent.",
+    )
+    self_parent = self_parent.model_copy(update={"parent_record_ids": (self_parent.record_id,)})
+    assert "cyclic_provenance" in {issue.code for issue in validate_dataset((self_parent,)).issues}
+
+    first = _record(source_kind="synthetic", source_id="cycle-a", text="Cycle A.")
+    second = _record(source_kind="synthetic", source_id="cycle-b", text="Cycle B.")
+    first = first.model_copy(update={"parent_record_ids": (second.record_id,)})
+    second = second.model_copy(update={"parent_record_ids": (first.record_id,)})
+    cyclic = [
+        issue
+        for issue in validate_dataset((first, second)).issues
+        if issue.code == "cyclic_provenance"
+    ]
+    assert {issue.path for issue in cyclic} == {first.record_id, second.record_id}
 
 
 def test_conversation_outcome_cannot_be_inferred_from_silence() -> None:

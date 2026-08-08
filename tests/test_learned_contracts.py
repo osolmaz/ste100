@@ -57,7 +57,20 @@ def test_rewriter_output_is_untrusted_protected_and_rechecked() -> None:
     assert outcome.candidate == "Do not set UNIT_A now."
     assert outcome.deterministic_gate_passed
     assert outcome.official_compliance_claimed is False
+    assert outcome.candidate_analysis is not None
     assert all(finding.rule_id != "4.2" for finding in outcome.candidate_analysis.findings)
+
+
+def test_rewriter_returns_rejected_outcome_for_invalid_sentinels() -> None:
+    outcome = rewrite_candidate(
+        "Set UNIT_A now.",
+        rewriter=StaticRewriter(model_id="bad-rewriter", candidate="Set it now."),
+    )
+    assert outcome.status == "rejected"
+    assert outcome.candidate is None
+    assert outcome.candidate_analysis is None
+    assert outcome.rejection_reason is not None
+    assert "sentinel" in outcome.rejection_reason
 
 
 def test_rewriter_gate_rejects_new_deterministic_violation() -> None:
@@ -70,6 +83,7 @@ def test_rewriter_gate_rejects_new_deterministic_violation() -> None:
     )
     assert outcome.status == "rejected"
     assert outcome.candidate is None
+    assert outcome.rejection_reason == "candidate introduced a deterministic violation"
     assert not outcome.deterministic_gate_passed
 
 
