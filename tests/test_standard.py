@@ -90,6 +90,11 @@ def test_manifest_counts_must_match_artifacts_and_published_differences_warn(
     assert "count_mismatch" in codes
     assert "published_count_difference" in codes
 
+    manifest["published_counts"]["unapproved_words"] = 1
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    report = validate_standard_pack(root)
+    assert "invalid_published_counts" in {issue.code for issue in report.issues}
+
     manifest["issue"] = 10
     with pytest.raises(ValidationError):
         StandardManifest.model_validate(manifest)
@@ -113,6 +118,9 @@ def test_bundled_runtime_pack_is_valid_and_source_traceable() -> None:
     assert len(pack.examples) >= 15
     assert sum(entry.status == "approved" for entry in pack.dictionary) == 876
     assert sum(entry.status == "unapproved" for entry in pack.dictionary) == 1320
+    assert pack.manifest.published_counts.approved_words == 875
+    assert pack.manifest.published_counts.unapproved_words == 1274
+    assert "All source-traceable rows are retained" in pack.manifest.count_reconciliation
     assert all(entry.review_state is ReviewState.REVIEWED for entry in pack.dictionary)
     assert all(entry.source.page is not None for entry in pack.dictionary)
     warning = next(issue for issue in report.issues if issue.code == "published_count_difference")

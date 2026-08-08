@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import pytest
+import spacy
 
 from ste100.checker import analyze
 from ste100.linguistics import SpacyAnalyzer
@@ -127,6 +130,26 @@ def test_manually_verified_standard_note_examples(analyzer: SpacyAnalyzer) -> No
             if finding.kind is FindingKind.VIOLATION
         }
         assert ("5.5" in failed) is (example.label == "negative")
+
+
+@pytest.mark.parametrize(
+    "components",
+    [
+        ("tagger", "sentencizer"),
+        ("parser",),
+        ("morphologizer", "sentencizer"),
+    ],
+)
+def test_spacy_pipeline_requires_parser_and_pos_component(
+    components: tuple[str, ...], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        spacy,
+        "load",
+        lambda _: SimpleNamespace(pipe_names=components, meta={}),
+    )
+    with pytest.raises(RuntimeError, match="parser and a POS-producing component"):
+        SpacyAnalyzer("incomplete")
 
 
 def test_missing_spacy_pipeline_has_clear_error() -> None:

@@ -1,4 +1,5 @@
 {
+  "count_reconciliation": "The fixed-column source table yields 876 approved and 1320 unapproved unique status/headword/part-of-speech rows after wrapped headwords are repaired. All source-traceable rows are retained; no row is deleted to force the printed totals.",
   "expected_counts": {
     "approved_words": 876,
     "general_rules": 8,
@@ -13,6 +14,12 @@
   },
   "format_version": "1",
   "issue": 9,
+  "published_counts": {
+    "approved_words": 875,
+    "general_rules": 8,
+    "numbered_rules": 53,
+    "unapproved_words": 1274
+  },
   "review_state": "reviewed",
   "source": {
     "line_end": null,

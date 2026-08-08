@@ -322,9 +322,15 @@ def validate_standard_pack(root: Path, *, allow_draft: bool = False) -> Validati
         return ValidationReport(tuple(issues))
     if manifest.review_state is ReviewState.DRAFT and not allow_draft:
         _add(issues, "draft_pack", "runtime loading requires a reviewed standard pack")
+    if manifest.published_counts.model_dump() != _ISSUE9_COUNTS:
+        _add(
+            issues,
+            "invalid_published_counts",
+            "the manifest published baseline must match Issue 9",
+        )
     published_differences = {
         name: manifest.expected_counts.model_dump()[name] - published
-        for name, published in _ISSUE9_COUNTS.items()
+        for name, published in manifest.published_counts.model_dump().items()
         if manifest.expected_counts.model_dump()[name] != published
     }
     if published_differences:

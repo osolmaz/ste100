@@ -74,6 +74,10 @@ _PROTECTED_VALUE_RE = re.compile(
     r"|\b[A-Za-z][A-Za-z0-9]*(?:[_/][A-Za-z0-9_-]+)+\b"
     r"|\b\d+(?:[.,]\d+)?(?:\s*(?:°?[A-Za-z%]+(?:[/-][A-Za-z%]+)*))?\b"
 )
+_VERTICAL_LIST_PRESENT_RE = re.compile(
+    r":\s*\r?\n\s*(?:[-*•]|[a-z][.)]|\d+(?:\.\d+)*[.)])\s+",
+    re.IGNORECASE,
+)
 _LIST_WITHOUT_COLON_RE = re.compile(
     r"(?m)^(?!\s*(?:[-*•]|[a-z][.)]|\d+(?:\.\d+)*[.)])\s)"
     r"(?P<intro>[^\n:]+[.!?])\s*\n\s*(?:[-*•]|[a-z][.)]|\d+(?:\.\d+)*[.)])\s+",
@@ -399,6 +403,8 @@ def _condition_comma_findings(document: Document, block: Block) -> list[Finding]
 def _structure_findings(document: Document) -> tuple[list[Finding], set[str]]:  # noqa: C901 -- Explicit block-kind dispatch.
     findings: list[Finding] = []
     applicable: set[str] = set(_ALWAYS_APPLICABLE if document.text.strip() else ())
+    if _VERTICAL_LIST_PRESENT_RE.search(document.text):
+        applicable.update(("4.3", "8.4"))
     for block in document.blocks:
         if block.kind in {BlockKind.PROCEDURE, BlockKind.WARNING, BlockKind.CAUTION}:
             applicable.update(("5.1", "5.2", "5.3", "5.4", "7.1", "7.2"))
@@ -447,21 +453,26 @@ def _structure_findings(document: Document) -> tuple[list[Finding], set[str]]:  
     return findings, applicable
 
 
-def _list_findings(text: str) -> list[Finding]:
+def _list_findings(text: str, excluded: tuple[ByteRange, ...]) -> list[Finding]:
     offsets = char_to_byte_offsets(text)
-    return [
-        _finding(
-            text,
-            rule_id="4.3",
-            checker_id="vertical_list",
-            kind=FindingKind.VIOLATION,
-            message="Use a colon before a vertical list.",
-            byte_range=ByteRange(
-                start=offsets[match.start("intro")], end=offsets[match.end("intro")]
-            ),
+    findings: list[Finding] = []
+    for match in _LIST_WITHOUT_COLON_RE.finditer(text):
+        intro_range = ByteRange(
+            start=offsets[match.start("intro")], end=offsets[match.end("intro")]
         )
-        for match in _LIST_WITHOUT_COLON_RE.finditer(text)
-    ]
+        if _overlaps(intro_range, excluded):
+            continue
+        findings.append(
+            _finding(
+                text,
+                rule_id="4.3",
+                checker_id="vertical_list",
+                kind=FindingKind.VIOLATION,
+                message="Use a colon before a vertical list.",
+                byte_range=intro_range,
+            )
+        )
+    return findings
 
 
 def _block_for_token(document: Document, token: LinguisticToken) -> Block | None:
@@ -859,7 +870,7 @@ def analyze(
         )
     )
     findings.extend(_parenthesis_findings(text, protected_ranges))
-    findings.extend(_list_findings(text))
+    findings.extend(_list_findings(text, protected_ranges))
     findings.extend(_vocabulary_findings(document, standard, protected_ranges))
     structure_findings, applicable = _structure_findings(document)
     findings.extend(structure_findings)
