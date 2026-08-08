@@ -1,0 +1,87 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ste100"
+version = "0.1.0"
+description = "Check English against ASD-STE100 and prepare controlled-language rewrites"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Onur Solmaz" }]
+license = { file = "LICENSE" }
+dependencies = [
+    "pydantic>=2.11,<3",
+]
+
+[project.optional-dependencies]
+spacy = ["spacy>=3.8,<4"]
+
+[project.scripts]
+ste100 = "ste100.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ste100"]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.16,<2",
+    "mutmut>=3.3,<4",
+    "pip-audit>=2.9,<3",
+    "pytest>=9,<10",
+    "pytest-cov>=6,<7",
+    "ruff>=0.12,<0.17",
+]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C90", "ANN", "RUF", "TID"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 8
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["src", "tests"]
+
+[[tool.mypy.overrides]]
+module = "spacy"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+source = ["src/ste100"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+
+[tool.mutmut]
+source_paths = ["src/ste100/protection.py"]
+also_copy = [
+    "src/ste100/__init__.py",
+    "src/ste100/checker.py",
+    "src/ste100/contracts.py",
+    "src/ste100/document.py",
+    "src/ste100/models.py",
+    "src/ste100/py.typed",
+    "src/ste100/standard.py",
+    "src/ste100/terminology.py",
+]
+pytest_add_cli_args_test_selection = ["tests/test_protection.py"]

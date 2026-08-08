@@ -10,6 +10,16 @@ This plan covers two products that share one standard and data program. The firs
 
 The system contract is defined in [`STE100_SYSTEM.md`](STE100_SYSTEM.md). Adjacent methods and possible data sources are recorded in [`2026-08-07-detection-and-rewrite-inspirations.md`](2026-08-07-detection-and-rewrite-inspirations.md).
 
+## Implementation record
+
+The corpus-independent foundation is implemented. It includes Pydantic and JSON Schema contracts, deterministic Issue 9 draft extraction, standard-pack validation, a lossless UTF-8 document parser, a 61-rule conformance catalog, deterministic checks, project terminology, protected sentinels, findings and coverage, the offline CLI, dataset leakage and provenance checks, detector and rewriter interfaces, independent model manifests, optional spaCy weak labels, and release gates.
+
+The exact source extraction has not become a reviewed pack. The rule count reconciles, but dictionary candidates produce 876 approved and 1,318 unapproved records instead of the published 875 and 1,274 words. The audit therefore prevents runtime use.
+
+The learned detector and rewriter are contracts, not trained artifacts. Large-scale corpus conversion, teacher generation, and training remain blocked on an authorized technical corpus, a 300-to-500-unit annotation pilot, and a frozen natural-passage sealed test. The private response-style corpus has been used only for local regression testing and remains weak preference evidence.
+
+Source authorization, natural rewrite judgments, contamination reporting, dictionary-meaning authority, and detector-hint ablation are now fixed in [`STE100_SYSTEM.md`](STE100_SYSTEM.md).
+
 ## Requirements
 
 The completed system must:

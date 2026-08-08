@@ -1,0 +1,14 @@
+[
+  {
+    "fixture_id": "sanitized-plain-shorter",
+    "matched_term": "plain",
+    "initial_assistant_response": "This answer gives background context and explains the first decision with enough detail for a careful reader to follow it. It then describes a second consideration and gives another explanation that is useful but not necessary for the immediate choice. The final part repeats the recommendation in different words so that the conclusion is clear to everyone who reads it.",
+    "final_assistant_response": "Choose the first option because it is simpler and costs less."
+  },
+  {
+    "fixture_id": "sanitized-revision-independent-of-ste",
+    "matched_term": "amk",
+    "initial_assistant_response": "Use the smaller file. It has the same required data.",
+    "final_assistant_response": "Use the smaller file; it has the same data."
+  }
+]

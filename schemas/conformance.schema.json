@@ -1,0 +1,74 @@
+{
+  "$defs": {
+    "ConformanceRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "coverage_scope": {
+          "enum": [
+            "full",
+            "partial",
+            "none"
+          ],
+          "title": "Coverage Scope",
+          "type": "string"
+        },
+        "deterministic_checkers": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Deterministic Checkers",
+          "type": "array"
+        },
+        "learned_role": {
+          "anyOf": [
+            {
+              "enum": [
+                "detector",
+                "rewriter"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Learned Role"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "release_gate": {
+          "enum": [
+            "blocking",
+            "report_only",
+            "human_review"
+          ],
+          "title": "Release Gate",
+          "type": "string"
+        },
+        "rule_id": {
+          "pattern": "^(?:[1-9]\\d*\\.[1-9]\\d*|GR-[1-9]\\d*)$",
+          "title": "Rule Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "rule_id",
+        "coverage_scope",
+        "release_gate",
+        "reason"
+      ],
+      "title": "ConformanceRecord",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "items": {
+    "$ref": "#/$defs/ConformanceRecord"
+  },
+  "type": "array"
+}
