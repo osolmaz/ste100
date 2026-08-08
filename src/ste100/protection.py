@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections import Counter
 from dataclasses import dataclass
 from itertools import pairwise
 from typing import Literal
 
 from ste100.document import char_to_byte_offsets, slice_bytes
 from ste100.models import ByteRange, ProjectDictionary, ProtectedSpan
+from ste100.protected_values import protected_occurrences
 from ste100.terminology import TermMatcher
 
 _MAX_PROTECTED_SPANS = 10_000
@@ -65,6 +67,15 @@ class ProtectedDocument:
             restored = restored.replace(sentinel, original)
         if pattern.search(restored):
             raise ProtectedContentError("candidate contains an unknown protected sentinel")
+        values = [
+            (original, span.kind) for original, span in zip(self.originals, self.spans, strict=True)
+        ]
+        expected = protected_occurrences(self.source_text, values)
+        occurrences = protected_occurrences(restored, values)
+        if Counter(occurrences) != Counter(expected) or occurrences != expected:
+            raise ProtectedContentError(
+                "restored candidate changed, duplicated, or reordered protected values"
+            )
         return restored
 
 
