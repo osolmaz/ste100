@@ -166,6 +166,27 @@ def test_dataset_rejects_bad_id_digest_range_and_unreviewed_synthetic_parent() -
     }.issubset(codes)
 
 
+def test_dataset_rejects_annotation_that_splits_utf8_character() -> None:
+    record = _record(
+        source_kind="technical_document",
+        source_id="unicode",
+        text="é text",
+    ).model_copy(
+        update={
+            "annotations": (
+                ViolationAnnotation(
+                    rule_id="8.1",
+                    label="violation",
+                    byte_range=ByteRange(start=1, end=2),
+                    annotator="reviewer",
+                ),
+            )
+        }
+    )
+    report = validate_dataset((record,))
+    assert "annotation_range" in {issue.code for issue in report.issues}
+
+
 def test_dataset_rejects_missing_parent_and_reordered_protected_values() -> None:
     first = ProtectedSpan(
         span_id="span_1111111111111111",

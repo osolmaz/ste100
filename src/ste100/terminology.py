@@ -55,15 +55,17 @@ def validate_project_dictionary(
                     )
                 )
             owners[key] = term.term
-        if standard is not None:
-            for entry in standard.dictionary_by_word.get(term.term.casefold(), ()):
-                if entry.status == "unapproved":
-                    issues.append(
-                        ValidationIssue(
-                            code="standard_conflict",
-                            message=f"project term is unapproved in the standard: {term.term}",
+            if standard is not None:
+                for entry in standard.dictionary_by_word.get(key, ()):
+                    if entry.status == "unapproved":
+                        issues.append(
+                            ValidationIssue(
+                                code="standard_conflict",
+                                message=(
+                                    f"project term form is unapproved in the standard: {form}"
+                                ),
+                            )
                         )
-                    )
     return ValidationReport(tuple(issues))
 
 

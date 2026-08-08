@@ -9,7 +9,7 @@ from pathlib import Path
 
 from pydantic import TypeAdapter, ValidationError
 
-from ste100.catalog import load_conformance_catalog, load_rule_catalog
+from ste100.catalog import load_conformance_catalog
 from ste100.checker import analyze
 from ste100.dataset import validate_dataset
 from ste100.extract import write_draft_extraction
@@ -105,19 +105,23 @@ def _validate_project(args: argparse.Namespace) -> int:
 def _explain(args: argparse.Namespace) -> int:
     if args.standard_pack is not None:
         standard = load_standard_pack(Path(args.standard_pack))
-        rules = standard.rules_by_id
+        rule = standard.rules_by_id.get(args.rule)
         matrix = {item.rule_id: item for item in standard.conformance}
+        rule_payload = rule.model_dump(mode="json") if rule is not None else None
     else:
-        rules = {item.rule_id: item for item in load_rule_catalog()}
         matrix = {item.rule_id: item for item in load_conformance_catalog()}
-    rule = rules.get(args.rule)
+        rule_payload = {
+            "rule_id": args.rule,
+            "requirement": None,
+            "review_state": "reviewed_standard_pack_required",
+        }
     conformance = matrix.get(args.rule)
-    if rule is None or conformance is None:
+    if rule_payload is None or conformance is None:
         print(f"Unknown rule: {args.rule}", file=sys.stderr)
         return 1
     _json(
         {
-            "rule": rule.model_dump(mode="json"),
+            "rule": rule_payload,
             "conformance": conformance.model_dump(mode="json"),
             "official_compliance_claimed": False,
         }
